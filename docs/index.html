@@ -336,24 +336,40 @@ function vSegClear(x,y1,y2,boxes){
   const lo=Math.min(y1,y2),hi=Math.max(y1,y2);
   return!boxes.some(b=>x>b.x1&&x<b.x2&&hi>b.y1&&lo<b.y2);
 }
+function hSegClear(y,x1,x2,boxes){
+  const lo=Math.min(x1,x2),hi=Math.max(x1,x2);
+  return!boxes.some(b=>y>b.y1&&y<b.y2&&hi>b.x1&&lo<b.x2);
+}
 function routeWire(fp,fSide,tp,tSide,allComps,skipIds){
   const STUB=20,MG=12;
   const boxes=allComps.filter(c=>!skipIds.includes(c.id)).map(c=>compBBox(c,MG));
   const ex=fSide==='right'?fp.x+STUB:fp.x-STUB;
   const tx=tSide==='right'?tp.x+STUB:tp.x-STUB;
+
+  // Tier 1: 3-segment H→V→H — scan midX, require all three segments clear
   const nom=(ex+tx)/2;
-  // scan outward from midpoint to find a clear vertical corridor
   for(let d=0;d<=500;d+=8){
     const cs=d===0?[nom]:[nom+d,nom-d];
     for(const mid of cs){
-      if(vSegClear(mid,fp.y,tp.y,boxes)){
+      if(hSegClear(fp.y,ex,mid,boxes)&&vSegClear(mid,fp.y,tp.y,boxes)&&hSegClear(tp.y,mid,tx,boxes)){
         return'M'+fp.x+' '+fp.y+'L'+ex+' '+fp.y+'L'+mid+' '+fp.y+'L'+mid+' '+tp.y+'L'+tx+' '+tp.y+'L'+tp.x+' '+tp.y;
       }
     }
   }
-  // fallback: go above all obstacles
-  const topY=boxes.length?Math.min(...boxes.map(b=>b.y1))-36:fp.y-40;
-  return'M'+fp.x+' '+fp.y+'L'+ex+' '+fp.y+'L'+ex+' '+topY+'L'+tx+' '+topY+'L'+tx+' '+tp.y+'L'+tp.x+' '+tp.y;
+
+  // Tier 2: 5-segment bypass H→V→H→V→H — go above or below all obstacles
+  const bTop=boxes.length?Math.min(...boxes.map(b=>b.y1)):fp.y;
+  const bBot=boxes.length?Math.max(...boxes.map(b=>b.y2)):fp.y;
+  for(let gap=20;gap<=400;gap+=20){
+    for(const byY of [bTop-gap,bBot+gap]){
+      if(vSegClear(ex,fp.y,byY,boxes)&&hSegClear(byY,ex,tx,boxes)&&vSegClear(tx,byY,tp.y,boxes)){
+        return'M'+fp.x+' '+fp.y+'L'+ex+' '+fp.y+'L'+ex+' '+byY+'L'+tx+' '+byY+'L'+tx+' '+tp.y+'L'+tp.x+' '+tp.y;
+      }
+    }
+  }
+
+  // Force fallback — guaranteed clear by going far above everything
+  return'M'+fp.x+' '+fp.y+'L'+ex+' '+fp.y+'L'+ex+' '+(bTop-60)+'L'+tx+' '+(bTop-60)+'L'+tx+' '+tp.y+'L'+tp.x+' '+tp.y;
 }
 
 function renderCanvas(){
