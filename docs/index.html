@@ -1,0 +1,481 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.tabs{display:flex;gap:4px;border-bottom:0.5px solid var(--color-border-tertiary);padding-top:0.5rem}
+.tab{padding:8px 16px;font-size:14px;cursor:pointer;border:none;background:none;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:var(--color-text-primary);border-bottom:2px solid var(--color-text-primary);font-weight:500}
+.section{display:none}.section.active{display:block}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:var(--border-radius-md);font-weight:500}
+.badge-pending{background:#FAEEDA;color:#633806}
+.badge-sourced{background:#E6F1FB;color:#0C447C}
+.badge-installed{background:#EAF3DE;color:#27500A}
+.badge-milestone{background:#EEEDFE;color:#3C3489}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:12px}
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem}
+.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px}
+.metric .num{font-size:22px;font-weight:500;color:var(--color-text-primary)}
+.metric .lbl{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+.btn{padding:7px 14px;font-size:13px;cursor:pointer;border-radius:var(--border-radius-md)}
+.btn-primary{background:var(--color-text-primary);color:var(--color-background-primary);border:none}
+.btn-ghost{background:none;border:0.5px solid var(--color-border-secondary);color:var(--color-text-primary)}
+.btn-sm{padding:4px 8px;font-size:12px}
+.btn-danger-sm{background:none;border:none;color:var(--color-text-danger);cursor:pointer;font-size:12px;padding:2px 6px}
+.btn-danger{background:none;border:none;color:var(--color-text-danger);cursor:pointer;font-size:13px;padding:4px 6px}
+.progress-bar-wrap{height:6px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden;margin-top:6px}
+.progress-bar{height:100%;background:#639922;border-radius:3px;transition:width 0.3s}
+.part-row{display:grid;grid-template-columns:28px 2.5fr 1fr 0.8fr 0.8fr 1fr 36px;gap:6px;align-items:center;padding:8px 4px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px}
+.part-row:last-child{border-bottom:none}
+.part-header{display:grid;grid-template-columns:28px 2.5fr 1fr 0.8fr 0.8fr 1fr 36px;gap:6px;padding:6px 4px;font-size:11px;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary)}
+.rank-btns{display:flex;flex-direction:column}.rank-btn{background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:10px;padding:0;line-height:1}.rank-btn:hover{color:var(--color-text-primary)}
+.editable{cursor:pointer;padding:2px 4px;border-radius:4px;min-height:20px;border:1px solid transparent}
+.editable:hover{background:var(--color-background-secondary);border-color:var(--color-border-tertiary)}
+.editable input,.editable select{font-size:12px;width:100%;padding:2px 4px;border:1px solid var(--color-border-secondary);border-radius:4px;background:var(--color-background-primary);color:var(--color-text-primary)}
+.system-tag{font-size:11px;color:var(--color-text-secondary);background:var(--color-background-secondary);padding:2px 6px;border-radius:4px}
+.canvas-wrap{position:relative;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;background:var(--color-background-secondary)}
+.toolbar{display:flex;flex-wrap:wrap;gap:4px;padding:8px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);align-items:center}
+.toolbar .sep{width:1px;height:24px;background:var(--color-border-tertiary);margin:0 4px}
+.tool-btn{padding:5px 10px;font-size:12px;cursor:pointer;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);white-space:nowrap}
+.tool-btn:hover{background:var(--color-background-secondary)}
+.wire-cfg{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-secondary)}
+.wire-cfg input[type=color]{width:28px;height:24px;padding:0;border:0.5px solid var(--color-border-secondary);border-radius:4px;cursor:pointer}
+.wire-cfg input[type=text]{width:80px;font-size:12px;padding:2px 6px}
+.hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--color-text-secondary);background:var(--color-background-primary);padding:4px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);pointer-events:none;z-index:10;white-space:nowrap}
+.inspector{border-top:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);padding:12px;font-size:13px;display:none}
+.inspector.open{display:block}
+.insp-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.insp-label{font-size:11px;color:var(--color-text-secondary);min-width:50px}
+.insp-input{font-size:13px;padding:4px 8px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary)}
+.port-list{display:flex;flex-direction:column;gap:4px;margin:4px 0}
+.port-item{display:flex;align-items:center;gap:6px;padding:3px 8px;border-radius:4px;background:var(--color-background-secondary);font-size:12px}
+.port-item .side-tag{font-size:10px;padding:1px 5px;border-radius:3px;background:var(--color-background-tertiary);color:var(--color-text-secondary)}
+.port-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.port-col-header{font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+.log-entry{padding:12px 0;border-bottom:0.5px solid var(--color-border-tertiary)}.log-entry:last-child{border-bottom:none}
+.log-date{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
+.log-title{font-size:14px;font-weight:500;margin-bottom:4px}
+.log-notes{font-size:13px;color:var(--color-text-secondary)}
+.milestone-dot{width:10px;height:10px;border-radius:50%;background:#7F77DD;flex-shrink:0}
+</style>
+<h2 class="sr-only">1978 Corolla SR5 build tracker v3 with editable parts, wiring canvas with port management, and build log</h2>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('parts')"><i class="ti ti-tools" aria-hidden="true"></i> Parts</button>
+  <button class="tab" onclick="switchTab('wiring')"><i class="ti ti-plug" aria-hidden="true"></i> Wiring</button>
+  <button class="tab" onclick="switchTab('log')"><i class="ti ti-notebook" aria-hidden="true"></i> Build log</button>
+</div>
+
+<div id="parts" class="section active">
+  <div class="metric-grid" id="metrics"></div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="addPart()"><i class="ti ti-plus" aria-hidden="true"></i> Add part</button>
+    <select id="filter-system" style="font-size:13px" onchange="renderParts()"><option value="">All systems</option><option>Engine</option><option>Drivetrain</option><option>Suspension</option><option>Electrical</option><option>Interior</option><option>Body</option><option>Brakes</option><option>Fuel</option></select>
+    <select id="filter-status" style="font-size:13px" onchange="renderParts()"><option value="">All statuses</option><option value="pending">Pending</option><option value="sourced">Sourced</option><option value="installed">Installed</option></select>
+  </div>
+  <div class="card" style="padding:0.75rem 1rem;overflow-x:auto">
+    <div class="part-header"><span>#</span><span>Part / vendor</span><span>System</span><span>Cost</span><span>Status</span><span>Need</span><span></span></div>
+    <div id="parts-list"></div>
+  </div>
+</div>
+
+<div id="wiring" class="section">
+  <div class="canvas-wrap">
+    <div class="toolbar" id="toolbar">
+      <button class="tool-btn" onclick="addComp('battery')"><i class="ti ti-battery-charging" aria-hidden="true"></i> Battery</button>
+      <button class="tool-btn" onclick="addComp('ecu')"><i class="ti ti-cpu" aria-hidden="true"></i> ECU</button>
+      <button class="tool-btn" onclick="addComp('fusebox')"><i class="ti ti-layout-grid" aria-hidden="true"></i> Fuse box</button>
+      <button class="tool-btn" onclick="addComp('relay')"><i class="ti ti-switch-horizontal" aria-hidden="true"></i> Relay</button>
+      <button class="tool-btn" onclick="addComp('sensor')"><i class="ti ti-activity" aria-hidden="true"></i> Sensor</button>
+      <button class="tool-btn" onclick="addComp('switch')"><i class="ti ti-toggle-right" aria-hidden="true"></i> Switch</button>
+      <button class="tool-btn" onclick="addComp('motor')"><i class="ti ti-propeller" aria-hidden="true"></i> Motor</button>
+      <button class="tool-btn" onclick="addComp('light')"><i class="ti ti-bulb" aria-hidden="true"></i> Light</button>
+      <button class="tool-btn" onclick="addComp('ground')"><i class="ti ti-arrow-bar-to-down" aria-hidden="true"></i> GND</button>
+      <button class="tool-btn" onclick="addComp('connector')"><i class="ti ti-plug" aria-hidden="true"></i> Conn</button>
+      <button class="tool-btn" onclick="addComp('gauge')"><i class="ti ti-gauge" aria-hidden="true"></i> Gauge</button>
+      <button class="tool-btn" onclick="addComp('generic')"><i class="ti ti-square" aria-hidden="true"></i> Custom</button>
+      <div class="sep"></div>
+      <div class="wire-cfg">
+        <input type="color" id="wire-color" value="#ff0000" title="Wire color" />
+        <input type="text" id="wire-label" placeholder="Label" />
+        <input type="text" id="wire-gauge" placeholder="AWG" style="width:50px" />
+      </div>
+      <div class="sep"></div>
+      <button class="tool-btn" onclick="deleteSelected()" title="Delete selected" style="color:var(--color-text-danger)"><i class="ti ti-trash" aria-hidden="true"></i></button>
+    </div>
+    <div style="position:relative;height:480px;overflow:hidden" id="svg-container">
+      <svg id="canvas" width="100%" height="100%"></svg>
+      <div class="hint" id="hint">Drag components to move. Click port → port to wire. Double-click to rename.</div>
+    </div>
+    <div class="inspector" id="inspector"></div>
+  </div>
+</div>
+
+<div id="log" class="section">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+    <input id="l-title" placeholder="Entry title" style="flex:2;min-width:160px;font-size:13px" />
+    <input id="l-date" type="date" style="flex:1;min-width:120px;font-size:13px" />
+    <select id="l-type" style="font-size:13px"><option value="note">Note</option><option value="milestone">Milestone</option></select>
+  </div>
+  <textarea id="l-notes" placeholder="Notes…" style="width:100%;height:72px;font-size:13px;padding:8px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);resize:vertical;margin-bottom:8px"></textarea>
+  <button class="btn btn-primary" onclick="addLog()" style="margin-bottom:1.5rem"><i class="ti ti-plus" aria-hidden="true"></i> Add entry</button>
+  <div id="log-list"></div>
+</div>
+
+<script>
+const TEMPLATES={
+  battery:{name:'Battery',color:'#EF9F27',ports:[{id:'pos',name:'+12V',side:'right'},{id:'neg',name:'GND',side:'right'}]},
+  ecu:{name:'ECU',color:'#378ADD',ports:[{id:'ign',name:'IGN',side:'left'},{id:'o2',name:'O2',side:'left'},{id:'map',name:'MAP',side:'left'},{id:'tps',name:'TPS',side:'left'},{id:'inj1',name:'INJ1',side:'right'},{id:'inj2',name:'INJ2',side:'right'},{id:'tach',name:'TACH',side:'right'},{id:'iac',name:'IAC',side:'right'}]},
+  fusebox:{name:'Fuse box',color:'#D85A30',ports:[{id:'in',name:'BATT+',side:'left'},{id:'f1',name:'F1',side:'right'},{id:'f2',name:'F2',side:'right'},{id:'f3',name:'F3',side:'right'},{id:'f4',name:'F4',side:'right'}]},
+  relay:{name:'Relay',color:'#888780',ports:[{id:'cp',name:'COIL+',side:'left'},{id:'cn',name:'COIL-',side:'left'},{id:'com',name:'COM',side:'right'},{id:'no',name:'NO',side:'right'}]},
+  sensor:{name:'Sensor',color:'#1D9E75',ports:[{id:'vref',name:'5V REF',side:'left'},{id:'gnd',name:'GND',side:'left'},{id:'sig',name:'SIG',side:'right'}]},
+  switch:{name:'Switch',color:'#888780',ports:[{id:'in',name:'IN',side:'left'},{id:'out',name:'OUT',side:'right'}]},
+  motor:{name:'Motor',color:'#7F77DD',ports:[{id:'pos',name:'+',side:'left'},{id:'neg',name:'-',side:'left'}]},
+  light:{name:'Light',color:'#EF9F27',ports:[{id:'pos',name:'+',side:'left'},{id:'neg',name:'-',side:'left'}]},
+  ground:{name:'GND',color:'#5F5E5A',ports:[{id:'gnd',name:'GND',side:'left'}]},
+  connector:{name:'Connector',color:'#888780',ports:[{id:'a1',name:'A1',side:'left'},{id:'a2',name:'A2',side:'left'},{id:'b1',name:'B1',side:'right'},{id:'b2',name:'B2',side:'right'}]},
+  gauge:{name:'Gauge',color:'#D4537E',ports:[{id:'sig',name:'SIG',side:'left'},{id:'vcc',name:'VCC',side:'left'},{id:'gnd',name:'GND',side:'left'}]},
+  generic:{name:'Custom',color:'#888780',ports:[{id:'in1',name:'IN1',side:'left'},{id:'out1',name:'OUT1',side:'right'}]}
+};
+
+let parts=[
+  {id:1,name:'4A-GE engine (AE86)',vendor:'Craigslist',cost:800,system:'Engine',status:'pending',need:1},
+  {id:2,name:'T50 5-speed trans',vendor:'',cost:250,system:'Drivetrain',status:'pending',need:2},
+  {id:3,name:'X27.168 steppers (x6)',vendor:'Digi-Key',cost:24,system:'Electrical',status:'sourced',need:3},
+  {id:4,name:'RP2040 Feather',vendor:'Adafruit',cost:12,system:'Electrical',status:'sourced',need:4},
+  {id:5,name:'Coilover kit',vendor:'',cost:600,system:'Suspension',status:'pending',need:5}
+];
+let nextPid=6,editingPart=null,editingField=null;
+
+let comps=[],wires=[],nextCid=1,nextWid=1;
+let selectedComp=null,selectedWire=null;
+let wiringFrom=null,previewLine=null;
+let dragState=null;
+let panOff={x:0,y:0},isPanning=false,panStart={x:0,y:0};
+
+let logs=[{title:'Project started — car purchased',date:'2026-06-11',type:'milestone',notes:'Bought the 1978 Corolla SR5 from Medford for $1,800.'}];
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['parts','wiring','log'][i]===t));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(t).classList.add('active');
+  if(t==='parts')renderParts();if(t==='wiring')renderCanvas();if(t==='log')renderLog();
+}
+
+function badgeHTML(s){return '<span class="badge badge-'+s+'">'+s+'</span>';}
+
+function renderMetrics(){
+  const tot=parts.reduce((a,p)=>a+Number(p.cost||0),0);
+  const inst=parts.filter(p=>p.status==='installed').length;
+  const src=parts.filter(p=>p.status==='sourced').length;
+  const pct=parts.length?Math.round(inst/parts.length*100):0;
+  document.getElementById('metrics').innerHTML=
+    '<div class="metric"><div class="num">$'+tot.toLocaleString()+'</div><div class="lbl">Budget</div></div>'+
+    '<div class="metric"><div class="num">'+parts.length+'</div><div class="lbl">Parts</div></div>'+
+    '<div class="metric"><div class="num">'+src+'</div><div class="lbl">Sourced</div></div>'+
+    '<div class="metric"><div class="num">'+pct+'%<div class="progress-bar-wrap"><div class="progress-bar" style="width:'+pct+'%"></div></div></div><div class="lbl">Installed</div></div>';
+}
+
+function filteredParts(){
+  let f=[...parts].sort((a,b)=>a.need-b.need);
+  const sys=document.getElementById('filter-system').value;
+  const st=document.getElementById('filter-status').value;
+  if(sys)f=f.filter(p=>p.system===sys);
+  if(st)f=f.filter(p=>p.status===st);
+  return f;
+}
+
+function renderParts(){
+  renderMetrics();
+  const list=filteredParts();
+  const el=document.getElementById('parts-list');
+  if(!list.length){el.innerHTML='<div style="padding:1rem;color:var(--color-text-secondary);font-size:13px">No parts match.</div>';return;}
+  el.innerHTML=list.map(p=>{
+    const needBar=Math.max(5,100-((p.need-1)/(parts.length||1))*100);
+    const needColor=p.need<=2?'#E24B4A':p.need<=4?'#EF9F27':'#85B7EB';
+    return '<div class="part-row">'+
+      '<div class="rank-btns"><button class="rank-btn" onclick="moveNeed('+p.id+',-1)">&#9650;</button><button class="rank-btn" onclick="moveNeed('+p.id+',1)">&#9660;</button></div>'+
+      '<div>'+ef(p,'name',p.name)+(p.vendor?'<div style="font-size:11px;color:var(--color-text-secondary)">'+ef(p,'vendor',p.vendor)+'</div>':'<div class="editable" style="font-size:11px" onclick="startEdit('+p.id+',\'vendor\')"><span style="color:var(--color-text-tertiary)">+ vendor</span></div>')+'</div>'+
+      '<div>'+esel(p,'system',p.system,['Engine','Drivetrain','Suspension','Electrical','Interior','Body','Brakes','Fuel'])+'</div>'+
+      '<div>'+ef(p,'cost','$'+(Number(p.cost)||0).toLocaleString())+'</div>'+
+      '<div>'+esel(p,'status',p.status,['pending','sourced','installed'])+'</div>'+
+      '<div style="display:flex;align-items:center;gap:4px"><span style="font-size:12px;color:var(--color-text-secondary)">#'+p.need+'</span><div style="flex:1;height:4px;background:var(--color-background-secondary);border-radius:2px"><div style="height:100%;width:'+needBar+'%;background:'+needColor+';border-radius:2px"></div></div></div>'+
+      '<button class="btn-danger" onclick="removePart('+p.id+')" aria-label="Remove"><i class="ti ti-x"></i></button></div>';
+  }).join('');
+}
+
+function ef(p,field,display){
+  if(editingPart===p.id&&editingField===field){
+    const v=field==='cost'?p.cost:p[field];
+    return '<span class="editable"><input type="'+(field==='cost'?'number':'text')+'" value="'+(v||'')+'" onblur="commitEdit('+p.id+',\''+field+'\',this.value)" onkeydown="if(event.key===\'Enter\')this.blur()" autofocus /></span>';
+  }
+  return '<span class="editable" onclick="startEdit('+p.id+',\''+field+'\')">'+display+'</span>';
+}
+function esel(p,field,val,opts){
+  if(editingPart===p.id&&editingField===field){
+    return '<span class="editable"><select onchange="commitEdit('+p.id+',\''+field+'\',this.value)" onblur="cancelEdit()">'+opts.map(o=>'<option'+(o===val?' selected':'')+'>'+o+'</option>').join('')+'</select></span>';
+  }
+  return '<span class="editable" onclick="startEdit('+p.id+',\''+field+'\')">'+(field==='status'?badgeHTML(val):'<span class="system-tag">'+val+'</span>')+'</span>';
+}
+function startEdit(id,f){editingPart=id;editingField=f;renderParts();}
+function cancelEdit(){editingPart=null;editingField=null;renderParts();}
+function commitEdit(id,f,v){const p=parts.find(x=>x.id===id);if(p){if(f==='cost')p.cost=Number(v)||0;else p[f]=v;}editingPart=null;editingField=null;renderParts();}
+function moveNeed(id,dir){const p=parts.find(x=>x.id===id);if(!p)return;const n=p.need+dir;if(n<1||n>parts.length)return;const o=parts.find(x=>x.need===n);if(o)o.need=p.need;p.need=n;renderParts();}
+function addPart(){parts.push({id:nextPid++,name:'New part',vendor:'',cost:0,system:'Engine',status:'pending',need:parts.length+1});editingPart=parts[parts.length-1].id;editingField='name';renderParts();}
+function removePart(id){parts=parts.filter(p=>p.id!==id);parts.sort((a,b)=>a.need-b.need).forEach((p,i)=>p.need=i+1);renderParts();}
+
+const svg=document.getElementById('canvas');
+const isDk=matchMedia('(prefers-color-scheme:dark)').matches;
+const C={bg:isDk?'#1a1a1a':'#f5f4f0',grid:isDk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.05)',text:isDk?'#e0e0e0':'#1a1a1a',muted:isDk?'#999':'#666',portFill:isDk?'#2a2a2a':'#fff',compBg:isDk?'#2a2a2a':'#fff',selStroke:'#378ADD'};
+
+function portPos(comp,pid){
+  const port=comp.ports.find(p=>p.id===pid);
+  if(!port)return{x:0,y:0};
+  const side=port.side==='left'?comp.ports.filter(p=>p.side==='left'):comp.ports.filter(p=>p.side==='right');
+  const idx=side.indexOf(port);
+  const py=28+14+idx*24;
+  return{x:comp.x+(port.side==='left'?0:comp.w)+panOff.x,y:comp.y+py+panOff.y};
+}
+function compH(comp){
+  const l=comp.ports.filter(p=>p.side==='left').length;
+  const r=comp.ports.filter(p=>p.side==='right').length;
+  return 28+14+Math.max(l,r,1)*24+4;
+}
+
+function svgCoords(e){
+  const rect=svg.getBoundingClientRect();
+  const vb=svg.viewBox.baseVal;
+  const sx=vb.width/rect.width;
+  return{x:(e.clientX-rect.left)*sx,y:(e.clientY-rect.top)*sx};
+}
+
+function renderCanvas(){
+  const ct=document.getElementById('svg-container');
+  const w=ct.clientWidth,h=ct.clientHeight;
+  svg.setAttribute('viewBox','0 0 '+w+' '+h);
+  let s='<defs><pattern id="gd" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0L0 0 0 20" fill="none" stroke="'+C.grid+'" stroke-width="0.5"/></pattern></defs>';
+  s+='<rect width="'+w+'" height="'+h+'" fill="'+C.bg+'"/><rect width="'+w+'" height="'+h+'" fill="url(#gd)"/>';
+
+  wires.forEach(wr=>{
+    const fc=comps.find(c=>c.id===wr.fromComp),tc=comps.find(c=>c.id===wr.toComp);
+    if(!fc||!tc)return;
+    const fp=portPos(fc,wr.fromPort),tp=portPos(tc,wr.toPort);
+    const dx=Math.max(Math.abs(tp.x-fp.x)*0.45,40);
+    const sel=selectedWire===wr.id;
+    s+='<path d="M'+fp.x+' '+fp.y+'C'+(fp.x+(fp.x<tp.x?dx:-dx))+' '+fp.y+' '+(tp.x+(fp.x<tp.x?-dx:dx))+' '+tp.y+' '+tp.x+' '+tp.y+'" fill="none" stroke="'+(sel?C.selStroke:wr.color)+'" stroke-width="'+(sel?3:2)+'" data-wire="'+wr.id+'" style="cursor:pointer"/>';
+    if(wr.label){
+      const mx=(fp.x+tp.x)/2,my=(fp.y+tp.y)/2;
+      const tw=wr.label.length*6.5+12;
+      s+='<rect x="'+(mx-tw/2)+'" y="'+(my-10)+'" width="'+tw+'" height="20" rx="4" fill="'+wr.color+'" opacity="0.9"/>';
+      s+='<text x="'+mx+'" y="'+(my+4)+'" text-anchor="middle" font-size="10" font-weight="500" fill="#fff">'+wr.label+'</text>';
+    }
+  });
+
+  comps.forEach(comp=>{
+    const sel=selectedComp===comp.id;
+    const ch=compH(comp);
+    const cx=comp.x+panOff.x,cy=comp.y+panOff.y;
+    s+='<g data-comp="'+comp.id+'" style="cursor:grab">';
+    s+='<rect x="'+cx+'" y="'+cy+'" width="'+comp.w+'" height="'+ch+'" rx="6" fill="'+C.compBg+'" stroke="'+(sel?C.selStroke:comp.color)+'" stroke-width="'+(sel?2.5:1)+'"/>';
+    s+='<rect x="'+cx+'" y="'+cy+'" width="'+comp.w+'" height="28" rx="6" fill="'+comp.color+'"/>';
+    s+='<rect x="'+cx+'" y="'+(cy+22)+'" width="'+comp.w+'" height="6" fill="'+comp.color+'"/>';
+    s+='<text x="'+(cx+comp.w/2)+'" y="'+(cy+18)+'" text-anchor="middle" font-size="12" font-weight="500" fill="#fff">'+comp.name+'</text>';
+
+    comp.ports.filter(p=>p.side==='left').forEach((port,i)=>{
+      const py=cy+28+14+i*24;
+      const isWiring=wiringFrom&&wiringFrom.comp===comp.id&&wiringFrom.port===port.id;
+      s+='<circle cx="'+cx+'" cy="'+py+'" r="'+(isWiring?7:5)+'" fill="'+(isWiring?comp.color:C.portFill)+'" stroke="'+comp.color+'" stroke-width="1.5" data-comp="'+comp.id+'" data-port="'+port.id+'" style="cursor:crosshair"/>';
+      s+='<text x="'+(cx+10)+'" y="'+(py+4)+'" font-size="10" fill="'+C.muted+'">'+port.name+'</text>';
+    });
+    comp.ports.filter(p=>p.side==='right').forEach((port,i)=>{
+      const py=cy+28+14+i*24;
+      const isWiring=wiringFrom&&wiringFrom.comp===comp.id&&wiringFrom.port===port.id;
+      s+='<circle cx="'+(cx+comp.w)+'" cy="'+py+'" r="'+(isWiring?7:5)+'" fill="'+(isWiring?comp.color:C.portFill)+'" stroke="'+comp.color+'" stroke-width="1.5" data-comp="'+comp.id+'" data-port="'+port.id+'" style="cursor:crosshair"/>';
+      s+='<text x="'+(cx+comp.w-10)+'" y="'+(py+4)+'" text-anchor="end" font-size="10" fill="'+C.muted+'">'+port.name+'</text>';
+    });
+    s+='</g>';
+  });
+
+  if(previewLine)s+='<line x1="'+previewLine.x1+'" y1="'+previewLine.y1+'" x2="'+previewLine.x2+'" y2="'+previewLine.y2+'" stroke="'+document.getElementById('wire-color').value+'" stroke-width="2" stroke-dasharray="6 3"/>';
+  svg.innerHTML=s;
+  renderInspector();
+}
+
+function renderInspector(){
+  const el=document.getElementById('inspector');
+  if(!selectedComp){el.className='inspector';el.innerHTML='';return;}
+  const comp=comps.find(c=>c.id===selectedComp);
+  if(!comp){el.className='inspector';return;}
+  el.className='inspector open';
+  const leftPorts=comp.ports.filter(p=>p.side==='left');
+  const rightPorts=comp.ports.filter(p=>p.side==='right');
+  el.innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+        '<div style="width:12px;height:12px;border-radius:3px;background:'+comp.color+'"></div>'+
+        '<span style="font-weight:500">'+comp.name+'</span>'+
+        '<span style="font-size:11px;color:var(--color-text-secondary)">'+comp.type+'</span>'+
+      '</div>'+
+      '<div style="display:flex;gap:4px">'+
+        '<button class="tool-btn" style="font-size:11px;padding:3px 8px" onclick="renameComp()"><i class="ti ti-edit" aria-hidden="true"></i> Rename</button>'+
+        '<button class="tool-btn" style="font-size:11px;padding:3px 8px;color:var(--color-text-danger)" onclick="deleteSelected()"><i class="ti ti-trash" aria-hidden="true"></i> Remove</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="port-cols">'+
+      '<div>'+
+        '<div class="port-col-header"><span><i class="ti ti-arrow-bar-right" aria-hidden="true" style="font-size:14px"></i> Inputs (left)</span><button class="tool-btn" style="font-size:11px;padding:2px 6px" onclick="addPort(\'left\')"><i class="ti ti-plus" aria-hidden="true"></i></button></div>'+
+        '<div class="port-list">'+leftPorts.map(p=>
+          '<div class="port-item"><span style="flex:1">'+p.name+'</span>'+
+          '<button class="btn-danger-sm" onclick="renamePort(\''+p.id+'\')" title="Rename"><i class="ti ti-edit"></i></button>'+
+          '<button class="btn-danger-sm" onclick="removePort(\''+p.id+'\')" title="Remove port"><i class="ti ti-x"></i></button></div>'
+        ).join('')+
+        (leftPorts.length===0?'<div style="font-size:11px;color:var(--color-text-tertiary);padding:4px">No input ports</div>':'')+
+        '</div>'+
+      '</div>'+
+      '<div>'+
+        '<div class="port-col-header"><span><i class="ti ti-arrow-bar-left" aria-hidden="true" style="font-size:14px"></i> Outputs (right)</span><button class="tool-btn" style="font-size:11px;padding:2px 6px" onclick="addPort(\'right\')"><i class="ti ti-plus" aria-hidden="true"></i></button></div>'+
+        '<div class="port-list">'+rightPorts.map(p=>
+          '<div class="port-item"><span style="flex:1">'+p.name+'</span>'+
+          '<button class="btn-danger-sm" onclick="renamePort(\''+p.id+'\')" title="Rename"><i class="ti ti-edit"></i></button>'+
+          '<button class="btn-danger-sm" onclick="removePort(\''+p.id+'\')" title="Remove port"><i class="ti ti-x"></i></button></div>'
+        ).join('')+
+        (rightPorts.length===0?'<div style="font-size:11px;color:var(--color-text-tertiary);padding:4px">No output ports</div>':'')+
+      '</div>'+
+    '</div>';
+}
+
+function addPort(side){
+  const comp=comps.find(c=>c.id===selectedComp);
+  if(!comp)return;
+  const name=prompt('Port name:','NEW');
+  if(!name)return;
+  const id='p'+Date.now();
+  comp.ports.push({id,name:name.toUpperCase(),side});
+  renderCanvas();
+}
+function removePort(pid){
+  const comp=comps.find(c=>c.id===selectedComp);
+  if(!comp)return;
+  wires=wires.filter(w=>!((w.fromComp===comp.id&&w.fromPort===pid)||(w.toComp===comp.id&&w.toPort===pid)));
+  comp.ports=comp.ports.filter(p=>p.id!==pid);
+  renderCanvas();
+}
+function renamePort(pid){
+  const comp=comps.find(c=>c.id===selectedComp);
+  if(!comp)return;
+  const port=comp.ports.find(p=>p.id===pid);
+  if(!port)return;
+  const name=prompt('Rename port:',port.name);
+  if(name)port.name=name.toUpperCase();
+  renderCanvas();
+}
+function renameComp(){
+  const comp=comps.find(c=>c.id===selectedComp);
+  if(!comp)return;
+  const name=prompt('Rename component:',comp.name);
+  if(name)comp.name=name;
+  renderCanvas();
+}
+
+function addComp(type){
+  const t=TEMPLATES[type];
+  comps.push({id:nextCid++,type,name:t.name,color:t.color,x:60+comps.length*25-panOff.x,y:40+comps.length*20-panOff.y,w:140,ports:JSON.parse(JSON.stringify(t.ports))});
+  selectedComp=comps[comps.length-1].id;selectedWire=null;
+  renderCanvas();
+}
+
+function deleteSelected(){
+  if(selectedWire){wires=wires.filter(w=>w.id!==selectedWire);selectedWire=null;}
+  else if(selectedComp){wires=wires.filter(w=>w.fromComp!==selectedComp&&w.toComp!==selectedComp);comps=comps.filter(c=>c.id!==selectedComp);selectedComp=null;}
+  renderCanvas();
+}
+
+svg.addEventListener('mousedown',e=>{
+  const t=e.target;
+  const pid=t.getAttribute('data-port');
+  const cid=t.getAttribute('data-comp');
+  const wid=t.getAttribute('data-wire');
+
+  if(pid&&cid){
+    const id=parseInt(cid);
+    if(!wiringFrom){
+      wiringFrom={comp:id,port:pid};
+      const fc=comps.find(c=>c.id===id);
+      const fp=portPos(fc,pid);
+      previewLine={x1:fp.x,y1:fp.y,x2:fp.x,y2:fp.y};
+      document.getElementById('hint').textContent='Click another port to complete wire. Esc to cancel.';
+    }else{
+      if(wiringFrom.comp!==id||wiringFrom.port!==pid){
+        wires.push({id:nextWid++,fromComp:wiringFrom.comp,fromPort:wiringFrom.port,toComp:id,toPort:pid,color:document.getElementById('wire-color').value,label:document.getElementById('wire-label').value.trim(),gauge:document.getElementById('wire-gauge').value.trim()});
+      }
+      wiringFrom=null;previewLine=null;
+      document.getElementById('hint').textContent='Drag components to move. Click port → port to wire. Double-click to rename.';
+    }
+    renderCanvas();e.stopPropagation();return;
+  }
+
+  if(wid){selectedWire=parseInt(wid);selectedComp=null;wiringFrom=null;previewLine=null;renderCanvas();e.stopPropagation();return;}
+
+  if(cid&&!pid){
+    const id=parseInt(cid);
+    selectedComp=id;selectedWire=null;
+    const comp=comps.find(c=>c.id===id);
+    if(comp){
+      const m=svgCoords(e);
+      dragState={comp,ox:m.x-(comp.x+panOff.x),oy:m.y-(comp.y+panOff.y)};
+    }
+    renderCanvas();e.stopPropagation();return;
+  }
+
+  if(!wiringFrom){
+    isPanning=true;panStart={x:e.clientX-panOff.x,y:e.clientY-panOff.y};
+    svg.style.cursor='grabbing';
+    selectedComp=null;selectedWire=null;renderCanvas();
+  }
+});
+
+svg.addEventListener('mousemove',e=>{
+  const m=svgCoords(e);
+  if(dragState){
+    dragState.comp.x=m.x-dragState.ox-panOff.x;
+    dragState.comp.y=m.y-dragState.oy-panOff.y;
+    renderCanvas();return;
+  }
+  if(isPanning){panOff.x=e.clientX-panStart.x;panOff.y=e.clientY-panStart.y;renderCanvas();return;}
+  if(previewLine){previewLine.x2=m.x;previewLine.y2=m.y;renderCanvas();}
+});
+
+svg.addEventListener('mouseup',()=>{dragState=null;isPanning=false;svg.style.cursor='default';});
+svg.addEventListener('mouseleave',()=>{dragState=null;isPanning=false;svg.style.cursor='default';});
+
+svg.addEventListener('dblclick',e=>{
+  const cid=e.target.getAttribute('data-comp');
+  if(cid&&!e.target.getAttribute('data-port')){
+    const comp=comps.find(c=>c.id===parseInt(cid));
+    if(comp){const n=prompt('Rename:',comp.name);if(n)comp.name=n;renderCanvas();}
+  }
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){wiringFrom=null;previewLine=null;document.getElementById('hint').textContent='Drag components to move. Click port → port to wire. Double-click to rename.';renderCanvas();}
+  if((e.key==='Delete'||e.key==='Backspace')&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))deleteSelected();
+});
+
+function renderLog(){
+  const el=document.getElementById('log-list');
+  if(!logs.length){el.innerHTML='<div style="color:var(--color-text-secondary);font-size:13px">No entries yet.</div>';return;}
+  el.innerHTML=[...logs].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(l=>
+    '<div class="log-entry"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
+    (l.type==='milestone'?'<div class="milestone-dot"></div>':'')+
+    '<div class="log-date">'+l.date+'</div>'+
+    (l.type==='milestone'?'<span class="badge badge-milestone">milestone</span>':'')+
+    '</div><div class="log-title">'+l.title+'</div>'+
+    (l.notes?'<div class="log-notes">'+l.notes+'</div>':'')+'</div>'
+  ).join('');
+}
+function addLog(){
+  const title=document.getElementById('l-title').value.trim();if(!title)return;
+  logs.push({title,date:document.getElementById('l-date').value||new Date().toISOString().slice(0,10),type:document.getElementById('l-type').value,notes:document.getElementById('l-notes').value.trim()});
+  document.getElementById('l-title').value='';document.getElementById('l-notes').value='';renderLog();
+}
+
+renderParts();
+</script>
