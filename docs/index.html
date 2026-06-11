@@ -1,61 +1,76 @@
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
-.tabs{display:flex;gap:4px;border-bottom:0.5px solid var(--color-border-tertiary);padding-top:0.5rem}
-.tab{padding:8px 16px;font-size:14px;cursor:pointer;border:none;background:none;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px}
-.tab.active{color:var(--color-text-primary);border-bottom:2px solid var(--color-text-primary);font-weight:500}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--color-border-tertiary);padding:0 6px;background:var(--color-background-primary)}
+.tab{padding:10px 16px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s;letter-spacing:-.01em}
+.tab:hover{color:var(--color-text-primary)}
+.tab.active{color:var(--color-text-primary);border-bottom-color:#378ADD;font-weight:600}
 .section{display:none}.section.active{display:block}
-.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:var(--border-radius-md);font-weight:500}
-.badge-pending{background:#FAEEDA;color:#633806}
-.badge-sourced{background:#E6F1FB;color:#0C447C}
-.badge-installed{background:#EAF3DE;color:#27500A}
-.badge-milestone{background:#EEEDFE;color:#3C3489}
-.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:12px}
+.badge{display:inline-flex;align-items:center;font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500;letter-spacing:.01em}
+.badge-pending{background:#FEF3C7;color:#92400E}
+.badge-sourced{background:#DBEAFE;color:#1E40AF}
+.badge-installed{background:#D1FAE5;color:#065F46}
+.badge-milestone{background:#EDE9FE;color:#5B21B6}
+.card{background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.03)}
 .metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem}
-.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px}
-.metric .num{font-size:22px;font-weight:500;color:var(--color-text-primary)}
-.metric .lbl{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
-.btn{padding:7px 14px;font-size:13px;cursor:pointer;border-radius:var(--border-radius-md)}
-.btn-primary{background:var(--color-text-primary);color:var(--color-background-primary);border:none}
-.btn-ghost{background:none;border:0.5px solid var(--color-border-secondary);color:var(--color-text-primary)}
-.btn-sm{padding:4px 8px;font-size:12px}
-.btn-danger-sm{background:none;border:none;color:var(--color-text-danger);cursor:pointer;font-size:12px;padding:2px 6px}
-.btn-danger{background:none;border:none;color:var(--color-text-danger);cursor:pointer;font-size:13px;padding:4px 6px}
-.progress-bar-wrap{height:6px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden;margin-top:6px}
-.progress-bar{height:100%;background:#639922;border-radius:3px;transition:width 0.3s}
-.part-row{display:grid;grid-template-columns:28px 2.5fr 1fr 0.8fr 0.8fr 1fr 36px;gap:6px;align-items:center;padding:8px 4px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px}
+.metric{background:var(--color-background-secondary);border-radius:10px;padding:14px 16px;border:1px solid var(--color-border-tertiary);transition:box-shadow .15s}
+.metric:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.metric .num{font-size:24px;font-weight:600;color:var(--color-text-primary);letter-spacing:-.03em}
+.metric .lbl{font-size:10px;font-weight:600;color:var(--color-text-secondary);margin-top:4px;letter-spacing:.05em;text-transform:uppercase}
+.btn{padding:7px 14px;font-size:13px;font-weight:500;cursor:pointer;border-radius:8px;transition:all .15s;letter-spacing:-.01em}
+.btn-primary{background:var(--color-text-primary);color:var(--color-background-primary);border:none;box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.btn-primary:hover{opacity:.85;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.btn-ghost{background:none;border:1px solid var(--color-border-secondary);color:var(--color-text-primary)}
+.btn-ghost:hover{background:var(--color-background-secondary)}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-danger-sm{background:none;border:none;color:var(--color-text-secondary);cursor:pointer;font-size:12px;padding:3px 6px;border-radius:5px;transition:color .12s,background .12s}
+.btn-danger-sm:hover{color:#EF4444;background:rgba(239,68,68,.1)}
+.btn-danger{background:none;border:none;color:var(--color-text-secondary);cursor:pointer;font-size:13px;padding:4px 6px;border-radius:5px;transition:color .12s,background .12s}
+.btn-danger:hover{color:#EF4444;background:rgba(239,68,68,.1)}
+.progress-bar-wrap{height:4px;background:rgba(0,0,0,.08);border-radius:2px;overflow:hidden;margin-top:10px}
+.progress-bar{height:100%;background:#22C55E;border-radius:2px;transition:width .4s ease}
+.part-row{display:grid;grid-template-columns:28px 2.5fr 1fr 0.8fr 0.8fr 1fr 36px;gap:6px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--color-border-tertiary);font-size:13px;border-radius:6px;transition:background .1s}
 .part-row:last-child{border-bottom:none}
-.part-header{display:grid;grid-template-columns:28px 2.5fr 1fr 0.8fr 0.8fr 1fr 36px;gap:6px;padding:6px 4px;font-size:11px;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary)}
-.rank-btns{display:flex;flex-direction:column}.rank-btn{background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:10px;padding:0;line-height:1}.rank-btn:hover{color:var(--color-text-primary)}
-.editable{cursor:pointer;padding:2px 4px;border-radius:4px;min-height:20px;border:1px solid transparent}
+.part-row:hover{background:var(--color-background-secondary)}
+.part-header{display:grid;grid-template-columns:28px 2.5fr 1fr 0.8fr 0.8fr 1fr 36px;gap:6px;padding:6px 6px;font-size:10px;font-weight:600;color:var(--color-text-secondary);border-bottom:1px solid var(--color-border-tertiary);letter-spacing:.05em;text-transform:uppercase}
+.rank-btns{display:flex;flex-direction:column;gap:1px}.rank-btn{background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:10px;padding:1px;line-height:1;border-radius:2px;transition:color .12s}.rank-btn:hover{color:var(--color-text-primary)}
+.editable{cursor:pointer;padding:3px 6px;border-radius:6px;min-height:20px;border:1px solid transparent;transition:background .12s,border-color .12s}
 .editable:hover{background:var(--color-background-secondary);border-color:var(--color-border-tertiary)}
-.editable input,.editable select{font-size:12px;width:100%;padding:2px 4px;border:1px solid var(--color-border-secondary);border-radius:4px;background:var(--color-background-primary);color:var(--color-text-primary)}
-.system-tag{font-size:11px;color:var(--color-text-secondary);background:var(--color-background-secondary);padding:2px 6px;border-radius:4px}
-.canvas-wrap{position:relative;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;background:var(--color-background-secondary)}
-.toolbar{display:flex;flex-wrap:wrap;gap:4px;padding:8px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);align-items:center}
-.toolbar .sep{width:1px;height:24px;background:var(--color-border-tertiary);margin:0 4px}
-.tool-btn{padding:5px 10px;font-size:12px;cursor:pointer;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);white-space:nowrap}
-.tool-btn:hover{background:var(--color-background-secondary)}
+.editable input,.editable select{font-size:12px;width:100%;padding:3px 6px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);outline:none;transition:border-color .12s,box-shadow .12s}
+.editable input:focus,.editable select:focus{border-color:#378ADD;box-shadow:0 0 0 3px rgba(55,138,221,.15)}
+.system-tag{font-size:11px;font-weight:500;color:var(--color-text-secondary);background:var(--color-background-secondary);padding:2px 8px;border-radius:20px;border:1px solid var(--color-border-tertiary)}
+.form-input{font-size:13px;padding:6px 10px;border:1px solid var(--color-border-secondary);border-radius:8px;background:var(--color-background-primary);color:var(--color-text-primary);outline:none;transition:border-color .12s,box-shadow .12s}
+.form-input:focus{border-color:#378ADD;box-shadow:0 0 0 3px rgba(55,138,221,.12)}
+.canvas-wrap{position:relative;border:1px solid var(--color-border-tertiary);border-radius:12px;overflow:hidden;background:var(--color-background-secondary);box-shadow:0 2px 12px rgba(0,0,0,.07),0 1px 3px rgba(0,0,0,.04)}
+.toolbar{display:flex;flex-wrap:wrap;gap:4px;padding:10px 12px;border-bottom:1px solid var(--color-border-tertiary);background:var(--color-background-primary);align-items:center}
+.toolbar .sep{width:1px;height:22px;background:var(--color-border-tertiary);margin:0 6px}
+.tool-btn{padding:5px 10px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--color-border-tertiary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);white-space:nowrap;transition:all .12s;letter-spacing:-.01em}
+.tool-btn:hover{background:var(--color-background-secondary);border-color:var(--color-border-secondary);box-shadow:0 1px 4px rgba(0,0,0,.09)}
+.tool-btn:active{transform:scale(.96)}
 .wire-cfg{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-secondary)}
-.wire-cfg input[type=color]{width:28px;height:24px;padding:0;border:0.5px solid var(--color-border-secondary);border-radius:4px;cursor:pointer}
-.wire-cfg input[type=text]{width:80px;font-size:12px;padding:2px 6px}
-.hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--color-text-secondary);background:var(--color-background-primary);padding:4px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);pointer-events:none;z-index:10;white-space:nowrap}
-.inspector{border-top:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);padding:12px;font-size:13px;display:none}
+.wire-cfg input[type=color]{width:28px;height:26px;padding:2px;border:1px solid var(--color-border-secondary);border-radius:6px;cursor:pointer;background:none}
+.wire-cfg input[type=text]{width:80px;font-size:12px;padding:4px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);outline:none;transition:border-color .12s,box-shadow .12s}
+.wire-cfg input[type=text]:focus{border-color:#378ADD;box-shadow:0 0 0 3px rgba(55,138,221,.12)}
+.hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:500;color:var(--color-text-secondary);background:var(--color-background-primary);padding:5px 14px;border-radius:20px;border:1px solid var(--color-border-tertiary);pointer-events:none;z-index:10;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.inspector{border-top:1px solid var(--color-border-tertiary);background:var(--color-background-primary);padding:12px 16px;font-size:13px;display:none}
 .inspector.open{display:block}
 .insp-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-.insp-label{font-size:11px;color:var(--color-text-secondary);min-width:50px}
-.insp-input{font-size:13px;padding:4px 8px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary)}
-.port-list{display:flex;flex-direction:column;gap:4px;margin:4px 0}
-.port-item{display:flex;align-items:center;gap:6px;padding:3px 8px;border-radius:4px;background:var(--color-background-secondary);font-size:12px}
-.port-item .side-tag{font-size:10px;padding:1px 5px;border-radius:3px;background:var(--color-background-tertiary);color:var(--color-text-secondary)}
-.port-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.port-col-header{font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
-.log-entry{padding:12px 0;border-bottom:0.5px solid var(--color-border-tertiary)}.log-entry:last-child{border-bottom:none}
-.log-date{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
-.log-title{font-size:14px;font-weight:500;margin-bottom:4px}
-.log-notes{font-size:13px;color:var(--color-text-secondary)}
-.milestone-dot{width:10px;height:10px;border-radius:50%;background:#7F77DD;flex-shrink:0}
+.insp-label{font-size:10px;font-weight:600;color:var(--color-text-secondary);min-width:50px;text-transform:uppercase;letter-spacing:.05em}
+.insp-input{font-size:13px;padding:5px 10px;border:1px solid var(--color-border-secondary);border-radius:8px;background:var(--color-background-primary);color:var(--color-text-primary);outline:none;transition:border-color .12s,box-shadow .12s}
+.insp-input:focus{border-color:#378ADD;box-shadow:0 0 0 3px rgba(55,138,221,.12)}
+.port-list{display:flex;flex-direction:column;gap:3px;margin:4px 0}
+.port-item{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;background:var(--color-background-secondary);font-size:12px;border:1px solid transparent;transition:border-color .12s}
+.port-item:hover{border-color:var(--color-border-secondary)}
+.port-item .side-tag{font-size:10px;padding:1px 6px;border-radius:10px;background:var(--color-background-primary);color:var(--color-text-secondary);border:1px solid var(--color-border-tertiary);font-weight:500}
+.port-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.port-col-header{font-size:10px;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;letter-spacing:.05em}
+.log-entry{padding:14px 0;border-bottom:1px solid var(--color-border-tertiary)}.log-entry:last-child{border-bottom:none}
+.log-date{font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:4px}
+.log-title{font-size:14px;font-weight:600;margin-bottom:4px;letter-spacing:-.01em}
+.log-notes{font-size:13px;color:var(--color-text-secondary);line-height:1.5}
+.milestone-dot{width:10px;height:10px;border-radius:50%;background:#7F77DD;flex-shrink:0;box-shadow:0 0 0 3px rgba(127,119,221,.2)}
 </style>
 <h2 class="sr-only">1978 Corolla SR5 build tracker v3 with editable parts, wiring canvas with port management, and build log</h2>
 <div class="tabs">
@@ -68,8 +83,8 @@
   <div class="metric-grid" id="metrics"></div>
   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
     <button class="btn btn-primary" onclick="addPart()"><i class="ti ti-plus" aria-hidden="true"></i> Add part</button>
-    <select id="filter-system" style="font-size:13px" onchange="renderParts()"><option value="">All systems</option><option>Engine</option><option>Drivetrain</option><option>Suspension</option><option>Electrical</option><option>Interior</option><option>Body</option><option>Brakes</option><option>Fuel</option></select>
-    <select id="filter-status" style="font-size:13px" onchange="renderParts()"><option value="">All statuses</option><option value="pending">Pending</option><option value="sourced">Sourced</option><option value="installed">Installed</option></select>
+    <select id="filter-system" class="form-input" onchange="renderParts()"><option value="">All systems</option><option>Engine</option><option>Drivetrain</option><option>Suspension</option><option>Electrical</option><option>Interior</option><option>Body</option><option>Brakes</option><option>Fuel</option></select>
+    <select id="filter-status" class="form-input" onchange="renderParts()"><option value="">All statuses</option><option value="pending">Pending</option><option value="sourced">Sourced</option><option value="installed">Installed</option></select>
   </div>
   <div class="card" style="padding:0.75rem 1rem;overflow-x:auto">
     <div class="part-header"><span>#</span><span>Part / vendor</span><span>System</span><span>Cost</span><span>Status</span><span>Need</span><span></span></div>
@@ -111,11 +126,11 @@
 
 <div id="log" class="section">
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-    <input id="l-title" placeholder="Entry title" style="flex:2;min-width:160px;font-size:13px" />
-    <input id="l-date" type="date" style="flex:1;min-width:120px;font-size:13px" />
-    <select id="l-type" style="font-size:13px"><option value="note">Note</option><option value="milestone">Milestone</option></select>
+    <input id="l-title" placeholder="Entry title" class="form-input" style="flex:2;min-width:160px" />
+    <input id="l-date" type="date" class="form-input" style="flex:1;min-width:120px" />
+    <select id="l-type" class="form-input"><option value="note">Note</option><option value="milestone">Milestone</option></select>
   </div>
-  <textarea id="l-notes" placeholder="Notes…" style="width:100%;height:72px;font-size:13px;padding:8px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);resize:vertical;margin-bottom:8px"></textarea>
+  <textarea id="l-notes" placeholder="Notes…" class="form-input" style="width:100%;height:80px;resize:vertical;margin-bottom:8px"></textarea>
   <button class="btn btn-primary" onclick="addLog()" style="margin-bottom:1.5rem"><i class="ti ti-plus" aria-hidden="true"></i> Add entry</button>
   <div id="log-list"></div>
 </div>
@@ -301,7 +316,7 @@ function renderCanvas(){
 
 function renderInspector(){
   const el=document.getElementById('inspector');
-  if(!selectedComp){el.className='inspector';el.innerHTML='';return;}
+  if(!selectedComp){el.className='inspector open';el.innerHTML='<div style="color:var(--color-text-secondary);font-size:12px;padding:2px 0">Click a component to select it — then add, remove, or rename its ports here.</div>';return;}
   const comp=comps.find(c=>c.id===selectedComp);
   if(!comp){el.className='inspector';return;}
   el.className='inspector open';
