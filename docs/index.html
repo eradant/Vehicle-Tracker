@@ -65,7 +65,9 @@
 .port-item:hover{border-color:var(--color-border-secondary)}
 .port-item .side-tag{font-size:10px;padding:1px 6px;border-radius:10px;background:var(--color-background-primary);color:var(--color-text-secondary);border:1px solid var(--color-border-tertiary);font-weight:500}
 .port-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.port-col-header{font-size:10px;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;letter-spacing:.05em}
+.port-col-header{font-size:10px;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;display:flex;align-items:center;text-transform:uppercase;letter-spacing:.05em}
+.add-port-btn{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:6px;padding:6px 10px;font-size:12px;font-weight:500;cursor:pointer;border:1px dashed var(--color-border-secondary);border-radius:6px;background:none;color:var(--color-text-secondary);width:100%;transition:all .12s;letter-spacing:-.01em}
+.add-port-btn:hover{border-color:#378ADD;color:#378ADD;background:rgba(55,138,221,.06)}
 .log-entry{padding:14px 0;border-bottom:1px solid var(--color-border-tertiary)}.log-entry:last-child{border-bottom:none}
 .log-date{font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:4px}
 .log-title{font-size:14px;font-weight:600;margin-bottom:4px;letter-spacing:-.01em}
@@ -323,36 +325,43 @@ function renderInspector(){
   const leftPorts=comp.ports.filter(p=>p.side==='left');
   const rightPorts=comp.ports.filter(p=>p.side==='right');
   el.innerHTML=
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'+
       '<div style="display:flex;align-items:center;gap:8px">'+
         '<div style="width:12px;height:12px;border-radius:3px;background:'+comp.color+'"></div>'+
-        '<span style="font-weight:500">'+comp.name+'</span>'+
+        '<span style="font-weight:600;letter-spacing:-.01em">'+comp.name+'</span>'+
         '<span style="font-size:11px;color:var(--color-text-secondary)">'+comp.type+'</span>'+
       '</div>'+
       '<div style="display:flex;gap:4px">'+
         '<button class="tool-btn" style="font-size:11px;padding:3px 8px" onclick="renameComp()"><i class="ti ti-edit" aria-hidden="true"></i> Rename</button>'+
-        '<button class="tool-btn" style="font-size:11px;padding:3px 8px;color:var(--color-text-danger)" onclick="deleteSelected()"><i class="ti ti-trash" aria-hidden="true"></i> Remove</button>'+
+        '<button class="tool-btn" style="font-size:11px;padding:3px 8px;color:#EF4444" onclick="deleteSelected()"><i class="ti ti-trash" aria-hidden="true"></i> Delete</button>'+
       '</div>'+
     '</div>'+
     '<div class="port-cols">'+
       '<div>'+
-        '<div class="port-col-header"><span><i class="ti ti-arrow-bar-right" aria-hidden="true" style="font-size:14px"></i> Inputs (left)</span><button class="tool-btn" style="font-size:11px;padding:2px 6px" onclick="addPort(\'left\')"><i class="ti ti-plus" aria-hidden="true"></i></button></div>'+
+        '<div class="port-col-header"><i class="ti ti-arrow-bar-right" aria-hidden="true" style="font-size:13px;margin-right:5px"></i> Inputs (left side)</div>'+
         '<div class="port-list">'+leftPorts.map(p=>
-          '<div class="port-item"><span style="flex:1">'+p.name+'</span>'+
-          '<button class="btn-danger-sm" onclick="renamePort(\''+p.id+'\')" title="Rename"><i class="ti ti-edit"></i></button>'+
-          '<button class="btn-danger-sm" onclick="removePort(\''+p.id+'\')" title="Remove port"><i class="ti ti-x"></i></button></div>'
+          '<div class="port-item">'+
+            '<span style="flex:1;font-weight:500">'+p.name+'</span>'+
+            '<button class="btn-danger-sm" onclick="renamePort(\''+p.id+'\')"><i class="ti ti-edit" style="font-size:11px"></i> Rename</button>'+
+            '<button class="btn-danger-sm" onclick="removePort(\''+p.id+'\')"><i class="ti ti-trash" style="font-size:11px"></i> Remove</button>'+
+          '</div>'
         ).join('')+
-        (leftPorts.length===0?'<div style="font-size:11px;color:var(--color-text-tertiary);padding:4px">No input ports</div>':'')+
+        (leftPorts.length===0?'<div style="font-size:11px;color:var(--color-text-secondary);padding:5px 2px;font-style:italic">No input ports</div>':'')+
         '</div>'+
+        '<button class="add-port-btn" onclick="addPort(\'left\')"><i class="ti ti-plus" aria-hidden="true"></i> Add input port</button>'+
       '</div>'+
       '<div>'+
-        '<div class="port-col-header"><span><i class="ti ti-arrow-bar-left" aria-hidden="true" style="font-size:14px"></i> Outputs (right)</span><button class="tool-btn" style="font-size:11px;padding:2px 6px" onclick="addPort(\'right\')"><i class="ti ti-plus" aria-hidden="true"></i></button></div>'+
+        '<div class="port-col-header"><i class="ti ti-arrow-bar-left" aria-hidden="true" style="font-size:13px;margin-right:5px"></i> Outputs (right side)</div>'+
         '<div class="port-list">'+rightPorts.map(p=>
-          '<div class="port-item"><span style="flex:1">'+p.name+'</span>'+
-          '<button class="btn-danger-sm" onclick="renamePort(\''+p.id+'\')" title="Rename"><i class="ti ti-edit"></i></button>'+
-          '<button class="btn-danger-sm" onclick="removePort(\''+p.id+'\')" title="Remove port"><i class="ti ti-x"></i></button></div>'
+          '<div class="port-item">'+
+            '<span style="flex:1;font-weight:500">'+p.name+'</span>'+
+            '<button class="btn-danger-sm" onclick="renamePort(\''+p.id+'\')"><i class="ti ti-edit" style="font-size:11px"></i> Rename</button>'+
+            '<button class="btn-danger-sm" onclick="removePort(\''+p.id+'\')"><i class="ti ti-trash" style="font-size:11px"></i> Remove</button>'+
+          '</div>'
         ).join('')+
-        (rightPorts.length===0?'<div style="font-size:11px;color:var(--color-text-tertiary);padding:4px">No output ports</div>':'')+
+        (rightPorts.length===0?'<div style="font-size:11px;color:var(--color-text-secondary);padding:5px 2px;font-style:italic">No output ports</div>':'')+
+        '</div>'+
+        '<button class="add-port-btn" onclick="addPort(\'right\')"><i class="ti ti-plus" aria-hidden="true"></i> Add output port</button>'+
       '</div>'+
     '</div>';
 }
