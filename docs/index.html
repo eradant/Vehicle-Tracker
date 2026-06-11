@@ -67,7 +67,7 @@ html,body{background:#000;min-height:100vh}
 .progress-bar{height:100%;background:var(--tp-success);border-radius:2px;transition:width .4s ease;box-shadow:0 0 8px rgba(63,185,80,.4)}
 
 /* Parts list */
-.part-row{display:grid;grid-template-columns:28px 2.5fr 1fr 0.8fr 0.8fr 1fr 36px;gap:6px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--tp-border);font-size:13px;border-radius:6px;transition:background .1s}
+.part-row{display:grid;grid-template-columns:28px 2.5fr 1fr 0.8fr 0.8fr 1fr 36px;gap:6px;align-items:start;padding:8px 6px;border-bottom:1px solid var(--tp-border);font-size:13px;border-radius:6px;transition:background .1s}
 .part-row:last-child{border-bottom:none}
 .part-row:hover{background:var(--tp-surface)}
 .part-header{display:grid;grid-template-columns:28px 2.5fr 1fr 0.8fr 0.8fr 1fr 36px;gap:6px;padding:6px 6px;font-size:10px;font-weight:700;color:var(--tp-dim);border-bottom:1px solid var(--tp-border);letter-spacing:1.1px;text-transform:uppercase}
@@ -79,6 +79,9 @@ html,body{background:#000;min-height:100vh}
 .system-tag{font-size:11px;font-weight:500;color:var(--tp-muted);background:var(--tp-surface);padding:2px 8px;border-radius:4px;border:1px solid var(--tp-border-hi)}
 .form-input{font-size:13px;padding:6px 10px;border:1px solid var(--tp-border);border-radius:7px;background:#000;color:var(--tp-text);outline:none;transition:border-color .12s,box-shadow .12s}
 .form-input:focus{border-color:rgba(77,159,255,.4);box-shadow:0 0 0 3px rgba(77,159,255,.07)}
+.part-inline-input{font-size:11px;padding:2px 0;border:none;border-bottom:1px solid var(--tp-border-hi);background:transparent;color:var(--tp-text);outline:none;width:100%;transition:border-color .12s}
+.part-inline-input:focus{border-bottom-color:var(--tp-accent)}
+.part-inline-input::placeholder{color:var(--tp-dim)}
 
 /* Wiring canvas */
 .canvas-wrap{position:relative;border:1px solid var(--tp-border);border-radius:var(--tp-r);overflow:hidden;background:var(--tp-panel);box-shadow:0 4px 40px rgba(0,0,0,.95),1px 0 0 var(--tp-border)}
@@ -207,11 +210,11 @@ const TEMPLATES={
 };
 
 let parts=[
-  {id:1,name:'4A-GE engine (AE86)',vendor:'Craigslist',cost:800,system:'Engine',status:'pending',need:1},
-  {id:2,name:'T50 5-speed trans',vendor:'',cost:250,system:'Drivetrain',status:'pending',need:2},
-  {id:3,name:'X27.168 steppers (x6)',vendor:'Digi-Key',cost:24,system:'Electrical',status:'sourced',need:3},
-  {id:4,name:'RP2040 Feather',vendor:'Adafruit',cost:12,system:'Electrical',status:'sourced',need:4},
-  {id:5,name:'Coilover kit',vendor:'',cost:600,system:'Suspension',status:'pending',need:5}
+  {id:1,name:'4A-GE engine (AE86)',vendor:'Craigslist',url:'',cost:800,system:'Engine',status:'pending',need:1},
+  {id:2,name:'T50 5-speed trans',vendor:'',url:'',cost:250,system:'Drivetrain',status:'pending',need:2},
+  {id:3,name:'X27.168 steppers (x6)',vendor:'Digi-Key',url:'',cost:24,system:'Electrical',status:'sourced',need:3},
+  {id:4,name:'RP2040 Feather',vendor:'Adafruit',url:'',cost:12,system:'Electrical',status:'sourced',need:4},
+  {id:5,name:'Coilover kit',vendor:'',url:'',cost:600,system:'Suspension',status:'pending',need:5}
 ];
 let nextPid=6,editingPart=null,editingField=null;
 
@@ -265,7 +268,7 @@ function renderParts(){
     const needColor=p.need<=2?'#E24B4A':p.need<=4?'#EF9F27':'#85B7EB';
     return '<div class="part-row">'+
       '<div class="rank-btns"><button class="rank-btn" onclick="moveNeed('+p.id+',-1)">&#9650;</button><button class="rank-btn" onclick="moveNeed('+p.id+',1)">&#9660;</button></div>'+
-      '<div>'+ef(p,'name',p.name)+(p.vendor?'<div style="font-size:11px;color:#58656f">'+ef(p,'vendor',p.vendor)+'</div>':'<div class="editable" style="font-size:11px" onclick="startEdit('+p.id+',\'vendor\')"><span style="color:#343e47">+ vendor</span></div>')+'</div>'+
+      '<div>'+ef(p,'name',p.name)+'<input class="part-inline-input" type="text" value="'+(p.vendor||'')+'" placeholder="Vendor" oninput="updateField('+p.id+',\'vendor\',this.value)"/><div style="display:flex;align-items:center;gap:3px;margin-top:2px"><input class="part-inline-input" type="text" value="'+(p.url||'')+'" placeholder="URL" oninput="updateField('+p.id+',\'url\',this.value)" style="flex:1;min-width:0"/><a id="part-url-link-'+p.id+'" href="'+(p.url||'#')+'" target="_blank" rel="noopener noreferrer" style="color:var(--tp-accent);flex-shrink:0;line-height:1;text-decoration:none;opacity:'+(p.url?'1':'0')+';pointer-events:'+(p.url?'auto':'none')+'"><i class="ti ti-external-link" style="font-size:12px"></i></a></div></div>'+
       '<div>'+esel(p,'system',p.system,['Engine','Drivetrain','Suspension','Electrical','Interior','Body','Brakes','Fuel'])+'</div>'+
       '<div>'+ef(p,'cost','$'+(Number(p.cost)||0).toLocaleString())+'</div>'+
       '<div>'+esel(p,'status',p.status,['pending','sourced','installed'])+'</div>'+
@@ -287,11 +290,12 @@ function esel(p,field,val,opts){
   }
   return '<span class="editable" onclick="startEdit('+p.id+',\''+field+'\')">'+(field==='status'?badgeHTML(val):'<span class="system-tag">'+val+'</span>')+'</span>';
 }
+function updateField(id,field,value){const p=parts.find(x=>x.id===id);if(p)p[field]=value;if(field==='url'){const a=document.getElementById('part-url-link-'+id);if(a){a.href=value||'#';a.style.opacity=value?'1':'0';a.style.pointerEvents=value?'auto':'none';}}save();}
 function startEdit(id,f){editingPart=id;editingField=f;renderParts();}
 function cancelEdit(){editingPart=null;editingField=null;renderParts();}
 function commitEdit(id,f,v){const p=parts.find(x=>x.id===id);if(p){if(f==='cost')p.cost=Number(v)||0;else p[f]=v;}editingPart=null;editingField=null;renderParts();save();}
 function moveNeed(id,dir){const p=parts.find(x=>x.id===id);if(!p)return;const n=p.need+dir;if(n<1||n>parts.length)return;const o=parts.find(x=>x.need===n);if(o)o.need=p.need;p.need=n;renderParts();save();}
-function addPart(){parts.push({id:nextPid++,name:'New part',vendor:'',cost:0,system:'Engine',status:'pending',need:parts.length+1});editingPart=parts[parts.length-1].id;editingField='name';renderParts();save();}
+function addPart(){parts.push({id:nextPid++,name:'New part',vendor:'',url:'',cost:0,system:'Engine',status:'pending',need:parts.length+1});editingPart=parts[parts.length-1].id;editingField='name';renderParts();save();}
 function removePart(id){parts=parts.filter(p=>p.id!==id);parts.sort((a,b)=>a.need-b.need).forEach((p,i)=>p.need=i+1);renderParts();save();}
 
 const svg=document.getElementById('canvas');
