@@ -27,7 +27,7 @@ html,body{background:#000;min-height:100vh}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
 
 /* Tabs */
-.tabs{display:flex;gap:0;border-bottom:1px solid var(--tp-border);padding:0 8px;background:var(--tp-panel);box-shadow:0 1px 0 rgba(77,159,255,.05),0 4px 20px rgba(0,0,0,.6)}
+.tabs{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--tp-border);padding:0 8px;background:var(--tp-panel);box-shadow:0 1px 0 rgba(77,159,255,.05),0 4px 20px rgba(0,0,0,.6)}
 .tab{padding:10px 16px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--tp-muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s;letter-spacing:.03em}
 .tab:hover{color:var(--tp-text)}
 .tab.active{color:var(--tp-text);border-bottom-color:var(--tp-accent);font-weight:600}
@@ -121,6 +121,11 @@ html,body{background:#000;min-height:100vh}
   <button class="tab active" onclick="switchTab('parts')"><i class="ti ti-tools" aria-hidden="true"></i> Parts</button>
   <button class="tab" onclick="switchTab('wiring')"><i class="ti ti-plug" aria-hidden="true"></i> Wiring</button>
   <button class="tab" onclick="switchTab('log')"><i class="ti ti-notebook" aria-hidden="true"></i> Build log</button>
+  <div id="save-area" style="margin-left:auto;display:flex;align-items:center;gap:6px;padding-right:4px">
+    <span id="save-status" style="font-size:11px;font-weight:500;letter-spacing:.04em;padding:3px 10px;border-radius:12px;white-space:nowrap;transition:color .2s,background .2s,border-color .2s;background:rgba(88,101,111,.15);color:#58656f;border:1px solid rgba(88,101,111,.25)">No save file</span>
+    <button id="btn-open-file" class="btn btn-ghost btn-sm" onclick="openSaveFile()" style="font-size:11px">Open file</button>
+    <button id="btn-new-file"  class="btn btn-ghost btn-sm" onclick="newSaveFile()"  style="font-size:11px">New file</button>
+  </div>
 </div>
 
 <div id="parts" class="section active">
@@ -180,6 +185,12 @@ html,body{background:#000;min-height:100vh}
 </div>
 
 <script>
+// ── IndexedDB helpers — persist FileSystemFileHandle across page loads ──────
+const IDB_NAME='vehicle-tracker-fsa',IDB_STORE='handles',IDB_KEY='saveFile';
+function idbOpen(){return new Promise((res,rej)=>{const req=indexedDB.open(IDB_NAME,1);req.onupgradeneeded=e=>e.target.result.createObjectStore(IDB_STORE);req.onsuccess=e=>res(e.target.result);req.onerror=e=>rej(e.target.error);});}
+function idbPut(v){return idbOpen().then(db=>new Promise((res,rej)=>{const tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).put(v,IDB_KEY);tx.oncomplete=()=>res();tx.onerror=e=>rej(e.target.error);}));}
+function idbGet(){return idbOpen().then(db=>new Promise((res,rej)=>{const tx=db.transaction(IDB_STORE,'readonly');const req=tx.objectStore(IDB_STORE).get(IDB_KEY);req.onsuccess=e=>res(e.target.result);req.onerror=e=>rej(e.target.error);}));}
+
 const TEMPLATES={
   battery:{name:'Battery',color:'#EF9F27',ports:[{id:'pos',name:'+12V',side:'right'},{id:'neg',name:'GND',side:'right'}]},
   ecu:{name:'ECU',color:'#378ADD',ports:[{id:'ign',name:'IGN',side:'left'},{id:'o2',name:'O2',side:'left'},{id:'map',name:'MAP',side:'left'},{id:'tps',name:'TPS',side:'left'},{id:'inj1',name:'INJ1',side:'right'},{id:'inj2',name:'INJ2',side:'right'},{id:'tach',name:'TACH',side:'right'},{id:'iac',name:'IAC',side:'right'}]},
@@ -211,6 +222,8 @@ let dragState=null;
 let panOff={x:0,y:0},isPanning=false,panStart={x:0,y:0};
 
 let logs=[{title:'Project started — car purchased',date:'2026-06-11',type:'milestone',notes:'Bought the 1978 Corolla SR5 from Medford for $1,800.'}];
+
+let fileHandle=null,_saveTimer=null;
 
 function switchTab(t){
   document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['parts','wiring','log'][i]===t));
@@ -276,10 +289,10 @@ function esel(p,field,val,opts){
 }
 function startEdit(id,f){editingPart=id;editingField=f;renderParts();}
 function cancelEdit(){editingPart=null;editingField=null;renderParts();}
-function commitEdit(id,f,v){const p=parts.find(x=>x.id===id);if(p){if(f==='cost')p.cost=Number(v)||0;else p[f]=v;}editingPart=null;editingField=null;renderParts();}
-function moveNeed(id,dir){const p=parts.find(x=>x.id===id);if(!p)return;const n=p.need+dir;if(n<1||n>parts.length)return;const o=parts.find(x=>x.need===n);if(o)o.need=p.need;p.need=n;renderParts();}
-function addPart(){parts.push({id:nextPid++,name:'New part',vendor:'',cost:0,system:'Engine',status:'pending',need:parts.length+1});editingPart=parts[parts.length-1].id;editingField='name';renderParts();}
-function removePart(id){parts=parts.filter(p=>p.id!==id);parts.sort((a,b)=>a.need-b.need).forEach((p,i)=>p.need=i+1);renderParts();}
+function commitEdit(id,f,v){const p=parts.find(x=>x.id===id);if(p){if(f==='cost')p.cost=Number(v)||0;else p[f]=v;}editingPart=null;editingField=null;renderParts();save();}
+function moveNeed(id,dir){const p=parts.find(x=>x.id===id);if(!p)return;const n=p.need+dir;if(n<1||n>parts.length)return;const o=parts.find(x=>x.need===n);if(o)o.need=p.need;p.need=n;renderParts();save();}
+function addPart(){parts.push({id:nextPid++,name:'New part',vendor:'',cost:0,system:'Engine',status:'pending',need:parts.length+1});editingPart=parts[parts.length-1].id;editingField='name';renderParts();save();}
+function removePart(id){parts=parts.filter(p=>p.id!==id);parts.sort((a,b)=>a.need-b.need).forEach((p,i)=>p.need=i+1);renderParts();save();}
 
 const svg=document.getElementById('canvas');
 const C={bg:'#050505',grid:'rgba(255,255,255,0.025)',text:'#e0e8f0',muted:'#58656f',portFill:'#111111',compBg:'#111111',selStroke:'#4d9fff'};
@@ -414,14 +427,14 @@ function addPort(side){
   if(!name)return;
   const id='p'+Date.now();
   comp.ports.push({id,name:name.toUpperCase(),side});
-  renderCanvas();
+  renderCanvas();save();
 }
 function removePort(pid){
   const comp=comps.find(c=>c.id===selectedComp);
   if(!comp)return;
   wires=wires.filter(w=>!((w.fromComp===comp.id&&w.fromPort===pid)||(w.toComp===comp.id&&w.toPort===pid)));
   comp.ports=comp.ports.filter(p=>p.id!==pid);
-  renderCanvas();
+  renderCanvas();save();
 }
 function renamePort(pid){
   const comp=comps.find(c=>c.id===selectedComp);
@@ -430,27 +443,57 @@ function renamePort(pid){
   if(!port)return;
   const name=prompt('Rename port:',port.name);
   if(name)port.name=name.toUpperCase();
-  renderCanvas();
+  renderCanvas();save();
 }
 function renameComp(){
   const comp=comps.find(c=>c.id===selectedComp);
   if(!comp)return;
   const name=prompt('Rename component:',comp.name);
   if(name)comp.name=name;
-  renderCanvas();
+  renderCanvas();save();
 }
 
 function addComp(type){
   const t=TEMPLATES[type];
   comps.push({id:nextCid++,type,name:t.name,color:t.color,x:60+comps.length*25-panOff.x,y:40+comps.length*20-panOff.y,w:140,ports:JSON.parse(JSON.stringify(t.ports))});
   selectedComp=comps[comps.length-1].id;selectedWire=null;
-  renderCanvas();
+  renderCanvas();save();
 }
 
 function deleteSelected(){
   if(selectedWire){wires=wires.filter(w=>w.id!==selectedWire);selectedWire=null;}
   else if(selectedComp){wires=wires.filter(w=>w.fromComp!==selectedComp&&w.toComp!==selectedComp);comps=comps.filter(c=>c.id!==selectedComp);selectedComp=null;}
-  renderCanvas();
+  renderCanvas();save();
+}
+
+// ── File System Access API persistence ──────────────────────────────────────
+function setStatus(state,label){
+  const chip=document.getElementById('save-status');
+  const btnO=document.getElementById('btn-open-file');
+  const btnN=document.getElementById('btn-new-file');
+  const S={
+    none:     {bg:'rgba(88,101,111,.15)', color:'#58656f', border:'rgba(88,101,111,.25)'},
+    saving:   {bg:'rgba(77,159,255,.1)',  color:'#4d9fff', border:'rgba(77,159,255,.2)'},
+    saved:    {bg:'rgba(63,185,80,.1)',   color:'#3fb950', border:'rgba(63,185,80,.2)'},
+    reconnect:{bg:'rgba(196,127,23,.12)',color:'#c47f17', border:'rgba(196,127,23,.25)'},
+    error:    {bg:'rgba(248,81,73,.1)',   color:'#f85149', border:'rgba(248,81,73,.2)'}
+  };
+  const s=S[state]||S.none;
+  chip.textContent=label;chip.style.background=s.bg;chip.style.color=s.color;chip.style.borderColor=s.border;
+  const noFile=(state==='none'||state==='reconnect');
+  btnO.style.display=noFile?'':'none';btnN.style.display=noFile?'':'none';
+}
+function serializeState(){return JSON.stringify({parts,nextPid,comps,nextCid,wires,nextWid,logs,panOff});}
+function save(){
+  if(!fileHandle)return;
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(()=>{
+    setStatus('saving','Saving…');
+    fileHandle.createWritable()
+      .then(w=>w.write(serializeState()).then(()=>w.close()))
+      .then(()=>setStatus('saved',fileHandle.name))
+      .catch(err=>{console.error('save:',err);setStatus('error','Save failed');});
+  },200);
 }
 
 function getAttr(el,attr){while(el&&el!==svg){if(el.getAttribute&&el.getAttribute(attr))return el.getAttribute(attr);el=el.parentNode;}return null;}
@@ -472,6 +515,7 @@ svg.addEventListener('mousedown',e=>{
     }else{
       if(wiringFrom.comp!==id||wiringFrom.port!==pid){
         wires.push({id:nextWid++,fromComp:wiringFrom.comp,fromPort:wiringFrom.port,toComp:id,toPort:pid,color:document.getElementById('wire-color').value,label:document.getElementById('wire-label').value.trim(),gauge:document.getElementById('wire-gauge').value.trim()});
+        save();
       }
       wiringFrom=null;previewLine=null;
       document.getElementById('hint').textContent='Drag components to move. Click port → port to wire. Double-click to rename.';
@@ -510,14 +554,14 @@ svg.addEventListener('mousemove',e=>{
   if(previewLine){previewLine.x2=m.x;previewLine.y2=m.y;renderCanvas();}
 });
 
-svg.addEventListener('mouseup',()=>{dragState=null;isPanning=false;svg.style.cursor='default';});
-svg.addEventListener('mouseleave',()=>{dragState=null;isPanning=false;svg.style.cursor='default';});
+svg.addEventListener('mouseup',()=>{const wd=!!dragState,wp=isPanning;dragState=null;isPanning=false;svg.style.cursor='default';if(wd||wp)save();});
+svg.addEventListener('mouseleave',()=>{const wd=!!dragState,wp=isPanning;dragState=null;isPanning=false;svg.style.cursor='default';if(wd||wp)save();});
 
 svg.addEventListener('dblclick',e=>{
   const cid=getAttr(e.target,'data-comp');
   if(cid&&!getAttr(e.target,'data-port')){
     const comp=comps.find(c=>c.id===parseInt(cid));
-    if(comp){const n=prompt('Rename:',comp.name);if(n)comp.name=n;renderCanvas();}
+    if(comp){const n=prompt('Rename:',comp.name);if(n){comp.name=n;renderCanvas();save();}}
   }
 });
 
@@ -541,8 +585,59 @@ function renderLog(){
 function addLog(){
   const title=document.getElementById('l-title').value.trim();if(!title)return;
   logs.push({title,date:document.getElementById('l-date').value||new Date().toISOString().slice(0,10),type:document.getElementById('l-type').value,notes:document.getElementById('l-notes').value.trim()});
-  document.getElementById('l-title').value='';document.getElementById('l-notes').value='';renderLog();
+  document.getElementById('l-title').value='';document.getElementById('l-notes').value='';renderLog();save();
+}
+
+function loadFromFile(handle){
+  return handle.getFile().then(f=>f.text()).then(text=>{
+    const d=JSON.parse(text);
+    if(Array.isArray(d.parts))parts=d.parts;
+    if(typeof d.nextPid==='number')nextPid=d.nextPid;
+    if(Array.isArray(d.comps))comps=d.comps;
+    if(typeof d.nextCid==='number')nextCid=d.nextCid;
+    if(Array.isArray(d.wires))wires=d.wires;
+    if(typeof d.nextWid==='number')nextWid=d.nextWid;
+    if(Array.isArray(d.logs))logs=d.logs;
+    if(d.panOff&&typeof d.panOff.x==='number')panOff=d.panOff;
+    renderParts();renderCanvas();renderLog();
+  });
+}
+function initSaveFile(){
+  idbGet().then(handle=>{
+    if(!handle){setStatus('none','No save file');return;}
+    return handle.queryPermission({mode:'readwrite'}).then(perm=>{
+      if(perm==='granted'){
+        fileHandle=handle;
+        return loadFromFile(handle).then(()=>setStatus('saved',handle.name));
+      }else{
+        setStatus('reconnect','Reconnect: '+handle.name);
+        const btnO=document.getElementById('btn-open-file');
+        btnO.textContent='Reconnect';
+        btnO.onclick=function(){
+          handle.requestPermission({mode:'readwrite'}).then(p=>{
+            btnO.textContent='Open file';btnO.onclick=openSaveFile;
+            if(p==='granted'){fileHandle=handle;return loadFromFile(handle).then(()=>setStatus('saved',handle.name));}
+            else setStatus('none','No save file');
+          });
+        };
+      }
+    });
+  }).catch(err=>{console.warn('initSaveFile:',err);setStatus('none','No save file');});
+}
+function openSaveFile(){
+  showOpenFilePicker({types:[{description:'JSON',accept:{'application/json':['.json']}}],multiple:false})
+    .then(([handle])=>{
+      fileHandle=handle;
+      return idbPut(handle).then(()=>loadFromFile(handle)).then(()=>setStatus('saved',handle.name));
+    })
+    .catch(err=>{if(err.name!=='AbortError'){console.error('openSaveFile:',err);setStatus('error','Open failed');}});
+}
+function newSaveFile(){
+  showSaveFilePicker({suggestedName:'vehicle-tracker.json',types:[{description:'JSON',accept:{'application/json':['.json']}}]})
+    .then(handle=>{fileHandle=handle;return idbPut(handle).then(()=>save());})
+    .catch(err=>{if(err.name!=='AbortError'){console.error('newSaveFile:',err);setStatus('error','Create failed');}});
 }
 
 renderParts();
+initSaveFile();
 </script>
