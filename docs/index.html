@@ -167,6 +167,11 @@ html,body{background:#000;min-height:100vh}
       </div>
       <div class="sep"></div>
       <button class="tool-btn" onclick="deleteSelected()" title="Delete selected" style="color:var(--tp-danger)"><i class="ti ti-trash" aria-hidden="true"></i></button>
+      <div class="sep"></div>
+      <button class="tool-btn" onclick="adjustZoom(-1)" title="Zoom out" style="padding:5px 9px;font-size:16px;line-height:1">−</button>
+      <span id="zoom-label" style="font-size:11px;color:var(--tp-muted);min-width:38px;text-align:center;user-select:none;padding:0 2px">100%</span>
+      <button class="tool-btn" onclick="adjustZoom(1)" title="Zoom in" style="padding:5px 9px;font-size:16px;line-height:1">+</button>
+      <button class="tool-btn" onclick="resetZoom()" title="Reset view" style="font-size:11px;padding:5px 8px">1:1</button>
     </div>
     <div style="position:relative;height:calc(100vh - 200px);min-height:600px;overflow:hidden" id="svg-container">
       <svg id="canvas" width="100%" height="100%"></svg>
@@ -223,6 +228,8 @@ let selectedComp=null,selectedWire=null;
 let wiringFrom=null,previewLine=null;
 let dragState=null;
 let panOff={x:0,y:0},isPanning=false,panStart={x:0,y:0};
+let zoom=1;
+const ZOOM_MIN=0.1,ZOOM_MAX=4,ZOOM_STEP=0.15;
 
 let logs=[{title:'Project started — car purchased',date:'2026-06-11',type:'milestone',notes:'Bought the 1978 Corolla SR5 from Medford for $1,800.'}];
 
@@ -307,7 +314,7 @@ function portPos(comp,pid){
   const side=port.side==='left'?comp.ports.filter(p=>p.side==='left'):comp.ports.filter(p=>p.side==='right');
   const idx=side.indexOf(port);
   const py=28+14+idx*24;
-  return{x:comp.x+(port.side==='left'?0:comp.w)+panOff.x,y:comp.y+py+panOff.y};
+  return{x:comp.x+(port.side==='left'?0:comp.w),y:comp.y+py};
 }
 function compH(comp){
   const l=comp.ports.filter(p=>p.side==='left').length;
@@ -321,13 +328,22 @@ function svgCoords(e){
   const sx=vb.width/rect.width;
   return{x:(e.clientX-rect.left)*sx,y:(e.clientY-rect.top)*sx};
 }
+function worldCoords(e){const m=svgCoords(e);return{x:(m.x-panOff.x)/zoom,y:(m.y-panOff.y)/zoom};}
 
 function renderCanvas(){
   const ct=document.getElementById('svg-container');
   const w=ct.clientWidth,h=ct.clientHeight;
   svg.setAttribute('viewBox','0 0 '+w+' '+h);
+  const zl=document.getElementById('zoom-label');
+  if(zl)zl.textContent=Math.round(zoom*100)+'%';
+
   let s='<defs><pattern id="gd" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0L0 0 0 20" fill="none" stroke="'+C.grid+'" stroke-width="0.5"/></pattern></defs>';
-  s+='<rect width="'+w+'" height="'+h+'" fill="'+C.bg+'"/><rect width="'+w+'" height="'+h+'" fill="url(#gd)"/>';
+  // Solid background in viewport space (no transform)
+  s+='<rect width="'+w+'" height="'+h+'" fill="'+C.bg+'"/>';
+  // World-space group: pan + zoom applied here
+  s+='<g transform="translate('+panOff.x+','+panOff.y+') scale('+zoom+')">';
+  // Large tiled grid covering any canvas extent
+  s+='<rect x="-10000" y="-10000" width="20000" height="20000" fill="url(#gd)"/>';
 
   wires.forEach(wr=>{
     const fc=comps.find(c=>c.id===wr.fromComp),tc=comps.find(c=>c.id===wr.toComp);
@@ -347,7 +363,7 @@ function renderCanvas(){
   comps.forEach(comp=>{
     const sel=selectedComp===comp.id;
     const ch=compH(comp);
-    const cx=comp.x+panOff.x,cy=comp.y+panOff.y;
+    const cx=comp.x,cy=comp.y;
     s+='<g data-comp="'+comp.id+'" style="cursor:grab">';
     s+='<rect x="'+cx+'" y="'+cy+'" width="'+comp.w+'" height="'+ch+'" rx="6" fill="'+C.compBg+'" stroke="'+(sel?C.selStroke:comp.color)+'" stroke-width="'+(sel?2.5:1)+'"/>';
     s+='<rect x="'+cx+'" y="'+cy+'" width="'+comp.w+'" height="28" rx="6" fill="'+comp.color+'"/>';
@@ -370,6 +386,7 @@ function renderCanvas(){
   });
 
   if(previewLine)s+='<line x1="'+previewLine.x1+'" y1="'+previewLine.y1+'" x2="'+previewLine.x2+'" y2="'+previewLine.y2+'" stroke="'+document.getElementById('wire-color').value+'" stroke-width="2" stroke-dasharray="6 3"/>';
+  s+='</g>';
   svg.innerHTML=s;
   renderInspector();
 }
@@ -459,7 +476,7 @@ function renameComp(){
 
 function addComp(type){
   const t=TEMPLATES[type];
-  comps.push({id:nextCid++,type,name:t.name,color:t.color,x:60+comps.length*25-panOff.x,y:40+comps.length*20-panOff.y,w:140,ports:JSON.parse(JSON.stringify(t.ports))});
+  comps.push({id:nextCid++,type,name:t.name,color:t.color,x:(60+comps.length*25-panOff.x)/zoom,y:(40+comps.length*20-panOff.y)/zoom,w:140,ports:JSON.parse(JSON.stringify(t.ports))});
   selectedComp=comps[comps.length-1].id;selectedWire=null;
   renderCanvas();save();
 }
@@ -487,7 +504,7 @@ function setStatus(state,label){
   const noFile=(state==='none'||state==='reconnect');
   btnO.style.display=noFile?'':'none';btnN.style.display=noFile?'':'none';
 }
-function serializeState(){return JSON.stringify({parts,nextPid,comps,nextCid,wires,nextWid,logs,panOff});}
+function serializeState(){return JSON.stringify({parts,nextPid,comps,nextCid,wires,nextWid,logs,panOff,zoom});}
 function save(){
   if(!fileHandle)return;
   clearTimeout(_saveTimer);
@@ -534,8 +551,8 @@ svg.addEventListener('mousedown',e=>{
     selectedComp=id;selectedWire=null;
     const comp=comps.find(c=>c.id===id);
     if(comp){
-      const m=svgCoords(e);
-      dragState={comp,ox:m.x-(comp.x+panOff.x),oy:m.y-(comp.y+panOff.y)};
+      const m=worldCoords(e);
+      dragState={comp,ox:m.x-comp.x,oy:m.y-comp.y};
     }
     renderCanvas();e.stopPropagation();return;
   }
@@ -548,18 +565,38 @@ svg.addEventListener('mousedown',e=>{
 });
 
 svg.addEventListener('mousemove',e=>{
-  const m=svgCoords(e);
-  if(dragState){
-    dragState.comp.x=m.x-dragState.ox-panOff.x;
-    dragState.comp.y=m.y-dragState.oy-panOff.y;
-    renderCanvas();return;
-  }
+  if(dragState){const m=worldCoords(e);dragState.comp.x=m.x-dragState.ox;dragState.comp.y=m.y-dragState.oy;renderCanvas();return;}
   if(isPanning){panOff.x=e.clientX-panStart.x;panOff.y=e.clientY-panStart.y;renderCanvas();return;}
-  if(previewLine){previewLine.x2=m.x;previewLine.y2=m.y;renderCanvas();}
+  if(previewLine){const m=worldCoords(e);previewLine.x2=m.x;previewLine.y2=m.y;renderCanvas();}
 });
 
 svg.addEventListener('mouseup',()=>{const wd=!!dragState,wp=isPanning;dragState=null;isPanning=false;svg.style.cursor='default';if(wd||wp)save();});
 svg.addEventListener('mouseleave',()=>{const wd=!!dragState,wp=isPanning;dragState=null;isPanning=false;svg.style.cursor='default';if(wd||wp)save();});
+
+svg.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const m=svgCoords(e);
+  const f=e.deltaY<0?(1+ZOOM_STEP):(1/(1+ZOOM_STEP));
+  const nz=Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,zoom*f));
+  const r=nz/zoom;
+  panOff.x=m.x-(m.x-panOff.x)*r;
+  panOff.y=m.y-(m.y-panOff.y)*r;
+  zoom=nz;
+  renderCanvas();save();
+},{passive:false});
+
+function adjustZoom(dir){
+  const ct=document.getElementById('svg-container');
+  const cx=ct.clientWidth/2,cy=ct.clientHeight/2;
+  const f=dir>0?(1+ZOOM_STEP):(1/(1+ZOOM_STEP));
+  const nz=Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,zoom*f));
+  const r=nz/zoom;
+  panOff.x=cx-(cx-panOff.x)*r;
+  panOff.y=cy-(cy-panOff.y)*r;
+  zoom=nz;
+  renderCanvas();save();
+}
+function resetZoom(){zoom=1;panOff={x:0,y:0};renderCanvas();save();}
 
 svg.addEventListener('dblclick',e=>{
   const cid=getAttr(e.target,'data-comp');
@@ -603,6 +640,7 @@ function loadFromFile(handle){
     if(typeof d.nextWid==='number')nextWid=d.nextWid;
     if(Array.isArray(d.logs))logs=d.logs;
     if(d.panOff&&typeof d.panOff.x==='number')panOff=d.panOff;
+    if(typeof d.zoom==='number')zoom=d.zoom;
     renderParts();renderCanvas();renderLog();
   });
 }
