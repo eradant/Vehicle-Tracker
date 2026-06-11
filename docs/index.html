@@ -330,6 +330,32 @@ function svgCoords(e){
 }
 function worldCoords(e){const m=svgCoords(e);return{x:(m.x-panOff.x)/zoom,y:(m.y-panOff.y)/zoom};}
 
+// ── Orthogonal wire routing ──────────────────────────────────────────────────
+function compBBox(c,mg){return{x1:c.x-mg,y1:c.y-mg,x2:c.x+c.w+mg,y2:c.y+compH(c)+mg};}
+function vSegClear(x,y1,y2,boxes){
+  const lo=Math.min(y1,y2),hi=Math.max(y1,y2);
+  return!boxes.some(b=>x>b.x1&&x<b.x2&&hi>b.y1&&lo<b.y2);
+}
+function routeWire(fp,fSide,tp,tSide,allComps,skipIds){
+  const STUB=20,MG=12;
+  const boxes=allComps.filter(c=>!skipIds.includes(c.id)).map(c=>compBBox(c,MG));
+  const ex=fSide==='right'?fp.x+STUB:fp.x-STUB;
+  const tx=tSide==='right'?tp.x+STUB:tp.x-STUB;
+  const nom=(ex+tx)/2;
+  // scan outward from midpoint to find a clear vertical corridor
+  for(let d=0;d<=500;d+=8){
+    const cs=d===0?[nom]:[nom+d,nom-d];
+    for(const mid of cs){
+      if(vSegClear(mid,fp.y,tp.y,boxes)){
+        return'M'+fp.x+' '+fp.y+'L'+ex+' '+fp.y+'L'+mid+' '+fp.y+'L'+mid+' '+tp.y+'L'+tx+' '+tp.y+'L'+tp.x+' '+tp.y;
+      }
+    }
+  }
+  // fallback: go above all obstacles
+  const topY=boxes.length?Math.min(...boxes.map(b=>b.y1))-36:fp.y-40;
+  return'M'+fp.x+' '+fp.y+'L'+ex+' '+fp.y+'L'+ex+' '+topY+'L'+tx+' '+topY+'L'+tx+' '+tp.y+'L'+tp.x+' '+tp.y;
+}
+
 function renderCanvas(){
   const ct=document.getElementById('svg-container');
   const w=ct.clientWidth,h=ct.clientHeight;
@@ -349,9 +375,11 @@ function renderCanvas(){
     const fc=comps.find(c=>c.id===wr.fromComp),tc=comps.find(c=>c.id===wr.toComp);
     if(!fc||!tc)return;
     const fp=portPos(fc,wr.fromPort),tp=portPos(tc,wr.toPort);
-    const dx=Math.max(Math.abs(tp.x-fp.x)*0.45,40);
+    const fport=fc.ports.find(p=>p.id===wr.fromPort);
+    const tport=tc.ports.find(p=>p.id===wr.toPort);
+    const rd=routeWire(fp,fport?fport.side:'right',tp,tport?tport.side:'left',comps,[fc.id,tc.id]);
     const sel=selectedWire===wr.id;
-    s+='<path d="M'+fp.x+' '+fp.y+'C'+(fp.x+(fp.x<tp.x?dx:-dx))+' '+fp.y+' '+(tp.x+(fp.x<tp.x?-dx:dx))+' '+tp.y+' '+tp.x+' '+tp.y+'" fill="none" stroke="'+(sel?C.selStroke:wr.color)+'" stroke-width="'+(sel?3:2)+'" data-wire="'+wr.id+'" style="cursor:pointer"/>';
+    s+='<path d="'+rd+'" fill="none" stroke="'+(sel?C.selStroke:wr.color)+'" stroke-width="'+(sel?3:2)+'" stroke-linejoin="round" stroke-linecap="round" data-wire="'+wr.id+'" style="cursor:pointer"/>';
     if(wr.label){
       const mx=(fp.x+tp.x)/2,my=(fp.y+tp.y)/2;
       const tw=wr.label.length*6.5+12;
