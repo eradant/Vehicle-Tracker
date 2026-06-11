@@ -157,7 +157,7 @@
         <input type="text" id="wire-gauge" placeholder="AWG" style="width:50px" />
       </div>
       <div class="sep"></div>
-      <button class="tool-btn" onclick="deleteSelected()" title="Delete selected" style="color:var(--color-text-danger)"><i class="ti ti-trash" aria-hidden="true"></i></button>
+      <button class="tool-btn" onclick="deleteSelected()" title="Delete selected" style="color:var(--tp-danger)"><i class="ti ti-trash" aria-hidden="true"></i></button>
     </div>
     <div style="position:relative;height:calc(100vh - 200px);min-height:600px;overflow:hidden" id="svg-container">
       <svg id="canvas" width="100%" height="100%"></svg>
@@ -245,17 +245,17 @@ function renderParts(){
   renderMetrics();
   const list=filteredParts();
   const el=document.getElementById('parts-list');
-  if(!list.length){el.innerHTML='<div style="padding:1rem;color:var(--color-text-secondary);font-size:13px">No parts match.</div>';return;}
+  if(!list.length){el.innerHTML='<div style="padding:1rem;color:#58656f;font-size:13px">No parts match.</div>';return;}
   el.innerHTML=list.map(p=>{
     const needBar=Math.max(5,100-((p.need-1)/(parts.length||1))*100);
     const needColor=p.need<=2?'#E24B4A':p.need<=4?'#EF9F27':'#85B7EB';
     return '<div class="part-row">'+
       '<div class="rank-btns"><button class="rank-btn" onclick="moveNeed('+p.id+',-1)">&#9650;</button><button class="rank-btn" onclick="moveNeed('+p.id+',1)">&#9660;</button></div>'+
-      '<div>'+ef(p,'name',p.name)+(p.vendor?'<div style="font-size:11px;color:var(--color-text-secondary)">'+ef(p,'vendor',p.vendor)+'</div>':'<div class="editable" style="font-size:11px" onclick="startEdit('+p.id+',\'vendor\')"><span style="color:var(--color-text-tertiary)">+ vendor</span></div>')+'</div>'+
+      '<div>'+ef(p,'name',p.name)+(p.vendor?'<div style="font-size:11px;color:#58656f">'+ef(p,'vendor',p.vendor)+'</div>':'<div class="editable" style="font-size:11px" onclick="startEdit('+p.id+',\'vendor\')"><span style="color:#343e47">+ vendor</span></div>')+'</div>'+
       '<div>'+esel(p,'system',p.system,['Engine','Drivetrain','Suspension','Electrical','Interior','Body','Brakes','Fuel'])+'</div>'+
       '<div>'+ef(p,'cost','$'+(Number(p.cost)||0).toLocaleString())+'</div>'+
       '<div>'+esel(p,'status',p.status,['pending','sourced','installed'])+'</div>'+
-      '<div style="display:flex;align-items:center;gap:4px"><span style="font-size:12px;color:var(--color-text-secondary)">#'+p.need+'</span><div style="flex:1;height:4px;background:var(--color-background-secondary);border-radius:2px"><div style="height:100%;width:'+needBar+'%;background:'+needColor+';border-radius:2px"></div></div></div>'+
+      '<div style="display:flex;align-items:center;gap:4px"><span style="font-size:12px;color:#58656f">#'+p.need+'</span><div style="flex:1;height:4px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:'+needBar+'%;background:'+needColor+';border-radius:2px"></div></div></div>'+
       '<button class="btn-danger" onclick="removePart('+p.id+')" aria-label="Remove"><i class="ti ti-x"></i></button></div>';
   }).join('');
 }
@@ -358,7 +358,7 @@ function renderCanvas(){
 
 function renderInspector(){
   const el=document.getElementById('inspector');
-  if(!selectedComp){el.className='inspector open';el.innerHTML='<div style="color:var(--color-text-secondary);font-size:12px;padding:2px 0">Click a component to select it — then add, remove, or rename its ports here.</div>';return;}
+  if(!selectedComp){el.className='inspector open';el.innerHTML='<div style="color:#58656f;font-size:12px;padding:2px 0">Click a component to select it — then add, remove, or rename its ports here.</div>';return;}
   const comp=comps.find(c=>c.id===selectedComp);
   if(!comp){el.className='inspector';return;}
   el.className='inspector open';
@@ -369,7 +369,7 @@ function renderInspector(){
       '<div style="display:flex;align-items:center;gap:8px">'+
         '<div style="width:12px;height:12px;border-radius:3px;background:'+comp.color+'"></div>'+
         '<span style="font-weight:600;letter-spacing:-.01em">'+comp.name+'</span>'+
-        '<span style="font-size:11px;color:var(--color-text-secondary)">'+comp.type+'</span>'+
+        '<span style="font-size:11px;color:#58656f">'+comp.type+'</span>'+
       '</div>'+
       '<div style="display:flex;gap:4px">'+
         '<button class="tool-btn" style="font-size:11px;padding:3px 8px" onclick="renameComp()"><i class="ti ti-edit" aria-hidden="true"></i> Rename</button>'+
@@ -386,7 +386,7 @@ function renderInspector(){
             '<button class="btn-danger-sm" onclick="removePort(\''+p.id+'\')"><i class="ti ti-trash" style="font-size:11px"></i> Remove</button>'+
           '</div>'
         ).join('')+
-        (leftPorts.length===0?'<div style="font-size:11px;color:var(--color-text-secondary);padding:5px 2px;font-style:italic">No input ports</div>':'')+
+        (leftPorts.length===0?'<div style="font-size:11px;color:#58656f;padding:5px 2px;font-style:italic">No input ports</div>':'')+
         '</div>'+
         '<button class="add-port-btn" onclick="addPort(\'left\')"><i class="ti ti-plus" aria-hidden="true"></i> Add input port</button>'+
       '</div>'+
@@ -399,7 +399,7 @@ function renderInspector(){
             '<button class="btn-danger-sm" onclick="removePort(\''+p.id+'\')"><i class="ti ti-trash" style="font-size:11px"></i> Remove</button>'+
           '</div>'
         ).join('')+
-        (rightPorts.length===0?'<div style="font-size:11px;color:var(--color-text-secondary);padding:5px 2px;font-style:italic">No output ports</div>':'')+
+        (rightPorts.length===0?'<div style="font-size:11px;color:#58656f;padding:5px 2px;font-style:italic">No output ports</div>':'')+
         '</div>'+
         '<button class="add-port-btn" onclick="addPort(\'right\')"><i class="ti ti-plus" aria-hidden="true"></i> Add output port</button>'+
       '</div>'+
@@ -527,7 +527,7 @@ document.addEventListener('keydown',e=>{
 
 function renderLog(){
   const el=document.getElementById('log-list');
-  if(!logs.length){el.innerHTML='<div style="color:var(--color-text-secondary);font-size:13px">No entries yet.</div>';return;}
+  if(!logs.length){el.innerHTML='<div style="color:#58656f;font-size:13px">No entries yet.</div>';return;}
   el.innerHTML=[...logs].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(l=>
     '<div class="log-entry"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
     (l.type==='milestone'?'<div class="milestone-dot"></div>':'')+
