@@ -342,9 +342,22 @@ function hSegClear(y,x1,x2,boxes){
 }
 function routeWire(fp,fSide,tp,tSide,allComps,skipIds){
   const STUB=20,MG=12;
-  const boxes=allComps.filter(c=>!skipIds.includes(c.id)).map(c=>compBBox(c,MG));
+  const srcId=skipIds[0],dstId=skipIds[1];
   const ex=fSide==='right'?fp.x+STUB:fp.x-STUB;
   const tx=tSide==='right'?tp.x+STUB:tp.x-STUB;
+  // Only exclude src/dst from obstacles when the stub end-point actually clips into
+  // their margin box (adjacent components). When positions are reversed the stubs
+  // are nowhere near each other, so both must remain as obstacles.
+  const rawBoxes=allComps.map(c=>({...compBBox(c,MG),id:c.id}));
+  const srcBox=rawBoxes.find(b=>b.id===srcId);
+  const dstBox=rawBoxes.find(b=>b.id===dstId);
+  const exInDst=dstBox&&ex>dstBox.x1&&ex<dstBox.x2&&fp.y>dstBox.y1&&fp.y<dstBox.y2;
+  const txInSrc=srcBox&&tx>srcBox.x1&&tx<srcBox.x2&&tp.y>srcBox.y1&&tp.y<srcBox.y2;
+  const boxes=rawBoxes.filter(b=>{
+    if(b.id===dstId&&exInDst)return false;
+    if(b.id===srcId&&txInSrc)return false;
+    return true;
+  });
 
   // Tier 1: 3-segment H→V→H — scan midX, require all three segments clear
   const nom=(ex+tx)/2;
