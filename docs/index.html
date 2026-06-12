@@ -340,6 +340,38 @@ function hSegClear(y,x1,x2,boxes){
   const lo=Math.min(x1,x2),hi=Math.max(x1,x2);
   return!boxes.some(b=>y>b.y1&&y<b.y2&&hi>b.x1&&lo<b.x2);
 }
+function simplifyPts(pts){
+  if(pts.length<=2)return pts;
+  const out=[pts[0]];
+  for(let i=1;i<pts.length-1;i++){
+    const a=out[out.length-1],b=pts[i],c=pts[i+1];
+    // keep only points that form a real corner (non-zero cross product)
+    if((b.x-a.x)*(c.y-a.y)!==(b.y-a.y)*(c.x-a.x))out.push(b);
+  }
+  out.push(pts[pts.length-1]);
+  return out;
+}
+function buildWirePath(pts,R){
+  if(pts.length<2)return'';
+  let d='M'+pts[0].x+' '+pts[0].y;
+  for(let i=1;i<pts.length;i++){
+    const p=pts[i-1],c=pts[i];
+    if(i===pts.length-1){d+='L'+c.x+' '+c.y;continue;}
+    const n=pts[i+1];
+    const d1x=c.x-p.x,d1y=c.y-p.y,l1=Math.hypot(d1x,d1y);
+    const d2x=n.x-c.x,d2y=n.y-c.y,l2=Math.hypot(d2x,d2y);
+    if(l1<0.01||l2<0.01){d+='L'+c.x+' '+c.y;continue;}
+    const r=Math.min(R,l1/2,l2/2);
+    const n1x=d1x/l1,n1y=d1y/l1,n2x=d2x/l2,n2y=d2y/l2;
+    d+='L'+(c.x-r*n1x)+' '+(c.y-r*n1y);
+    const sw=n1x*n2y-n1y*n2x>0?1:0;
+    d+='A'+r+' '+r+' 0 0 '+sw+' '+(c.x+r*n2x)+' '+(c.y+r*n2y);
+  }
+  return d;
+}
+const WIRE_R=6;
+function wirePts(pts){return buildWirePath(simplifyPts(pts),WIRE_R);}
+
 function routeWire(fp,fSide,tp,tSide,allComps,skipIds){
   const STUB=20,MG=12;
   const srcId=skipIds[0],dstId=skipIds[1];
@@ -365,7 +397,7 @@ function routeWire(fp,fSide,tp,tSide,allComps,skipIds){
     const cs=d===0?[nom]:[nom+d,nom-d];
     for(const mid of cs){
       if(hSegClear(fp.y,ex,mid,boxes)&&vSegClear(mid,fp.y,tp.y,boxes)&&hSegClear(tp.y,mid,tx,boxes)){
-        return'M'+fp.x+' '+fp.y+'L'+ex+' '+fp.y+'L'+mid+' '+fp.y+'L'+mid+' '+tp.y+'L'+tx+' '+tp.y+'L'+tp.x+' '+tp.y;
+        return wirePts([{x:fp.x,y:fp.y},{x:ex,y:fp.y},{x:mid,y:fp.y},{x:mid,y:tp.y},{x:tx,y:tp.y},{x:tp.x,y:tp.y}]);
       }
     }
   }
@@ -376,13 +408,13 @@ function routeWire(fp,fSide,tp,tSide,allComps,skipIds){
   for(let gap=20;gap<=400;gap+=20){
     for(const byY of [bTop-gap,bBot+gap]){
       if(vSegClear(ex,fp.y,byY,boxes)&&hSegClear(byY,ex,tx,boxes)&&vSegClear(tx,byY,tp.y,boxes)){
-        return'M'+fp.x+' '+fp.y+'L'+ex+' '+fp.y+'L'+ex+' '+byY+'L'+tx+' '+byY+'L'+tx+' '+tp.y+'L'+tp.x+' '+tp.y;
+        return wirePts([{x:fp.x,y:fp.y},{x:ex,y:fp.y},{x:ex,y:byY},{x:tx,y:byY},{x:tx,y:tp.y},{x:tp.x,y:tp.y}]);
       }
     }
   }
 
   // Force fallback — guaranteed clear by going far above everything
-  return'M'+fp.x+' '+fp.y+'L'+ex+' '+fp.y+'L'+ex+' '+(bTop-60)+'L'+tx+' '+(bTop-60)+'L'+tx+' '+tp.y+'L'+tp.x+' '+tp.y;
+  return wirePts([{x:fp.x,y:fp.y},{x:ex,y:fp.y},{x:ex,y:bTop-60},{x:tx,y:bTop-60},{x:tx,y:tp.y},{x:tp.x,y:tp.y}]);
 }
 
 function renderCanvas(){
